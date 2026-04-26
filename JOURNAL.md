@@ -69,6 +69,44 @@ Start Session 003: derive the gradient and Hessian of the Weber objective $f(x,y
 ~3 hours including environment setup, debugging SAC blocks, dataset research, and final visualization. Mood: high. The map is the first visual artifact of the project that looks like a real engineering output. Going from "vague optimization idea" to "41,288 verified weighted demand points covering all of populated HK" in two sessions feels like genuine momentum.
 
 ---
+## Session 003 — 2026-04-26 — Hand-Rolled Solvers Land on Mong Kok
+
+**What I built / learned**
+
+- Derived the gradient $\nabla f$ and Hessian $\nabla^2 f$ of the Weber objective $f(x,y) = \sum_i w_i \sqrt{(x-x_i)^2 + (y-y_i)^2}$ by hand, using the chain rule on the square root and the quotient rule on the resulting fractions. Proved $f$ is convex by showing each term's Hessian is positive semi-definite (rank 1, non-negative diagonal, zero determinant), which guarantees a unique global minimum.
+- Implemented three solvers from scratch in NumPy on the 41,288 demand points: gradient descent ($\mathbf{x}_{k+1} = \mathbf{x}_k - \alpha \nabla f$), Newton-Raphson (solving $\nabla^2 f \cdot \mathbf{p} = -\nabla f$ for the step), and a SciPy BFGS reference for cross-validation. All three converged to the same optimum to 8 decimal places.
+- Used `np.linalg.solve(H, -g)` instead of computing $H^{-1}$ explicitly. For 2×2 the saving is negligible, but the constant factor is 2-3× smaller, the result is more numerically stable (LU decomposition with pivoting handles ill-conditioning), and the habit transfers to Phase 3 where multi-facility k-median problems will have hundreds-by-hundreds Hessians and the choice will start mattering.
+- **The optimum: lon=114.17071, lat=22.33729 — Prince Edward MTR / Mong Kok East.** The densest residential corridor in Kowloon. Total weighted distance at this point: 670,587 (degree units), roughly 74 million person-kilometers. This is the absolute lower bound on average travel distance for any single-facility placement serving HK's 7.5M population.
+- Vectorized every operation. No Python loops over the 41,288 demand points — all gradient and Hessian sums are NumPy array operations. Function evaluation runs in ~1 ms instead of the ~30 seconds a naive loop would take.
+
+**Key insight or aha moment**
+
+Two big ones, and they happened in opposite directions.
+
+The first was **mathematical**. After deriving $\nabla d_i = (1/d_i) \cdot (x - x_i, y - y_i)$, I noticed it's always a unit vector pointing from the demand point toward the facility. The gradient of any distance function is unit-magnitude — only the direction varies. That single fact reframed the entire problem geometrically: gradient descent is literally summing unit vectors away from each demand point, scaled by population weight, and walking against the result. It's not just symbol manipulation, it's a vector field.
+
+The second was **computational and humbling**. First run of gradient descent with $\alpha = 10^{-7}$ blew up — overshot the optimum, walked off the map into the Pearl River estuary at lon=113.95, lat=22.04, and hit the 10,000-iteration cap without converging. Newton-Raphson on the same starting point with the same gradient code converged in 5 iterations. This is the **textbook step-size failure mode** Dr. Kuo lectured about in DASE2135 — "too large $\alpha$ → overshoot, oscillate, possibly diverge" — playing out in front of me on real HK data.
+
+The fix was retuning to $\alpha = 10^{-9}$ (two orders of magnitude smaller), which made gradient descent converge in 255 iterations to the same answer Newton found in 5. **The 51× iteration ratio is exactly why second-order methods exist:** Newton uses the Hessian to fit a local quadratic and jump to its minimum; gradient descent only knows the slope and crawls down it blindly. Same problem, same correct math, two completely different convergence speeds.
+
+The deepest insight wasn't the math itself but watching it work. The optimum coordinate (114.17071, 22.33729) sits almost exactly on Prince Edward MTR Station — which every Hong Konger already knows is the densest residential corridor in Kowloon. My equations independently rediscovered something obvious from lived experience. The fact that hand-derived calculus on a public-domain population dataset reproduced local common knowledge is the moment the project became real to me. Math isn't an exercise anymore. It's a tool I trust.
+
+**What I got stuck on**
+
+- Initial gradient descent step size $\alpha = 10^{-7}$ caused divergence as described above. The fix took 30 seconds (one-line edit, re-run) but the diagnostic process — looking at the failed final coordinate, recognizing it was off the map, connecting it to the lecture material on overshoot — was where the actual learning happened. Worth more than getting it right on the first try.
+- The "warning" output saying solvers disagreed by 27 km was misleading on first glance. Reading it more carefully revealed Newton-Raphson and SciPy BFGS agreed to 5 decimal places; gradient descent's failed answer was the only outlier. Lesson: always read what the cross-validation is actually telling you, not just whether it printed "warning" or "ok."
+- The numerical $\varepsilon = 10^{-9}$ inside `sqrt(dx² + dy² + EPS)` to guard against division-by-zero at demand points. Subtle but important — without it, if a solver step ever lands exactly on a demand point, the gradient explodes. Defensive coding for math edge cases.
+
+**Next session's first move**
+
+Session 004: visualize the convergence trails on a Folium map of HK. Plot the population heatmap from Session 002 as the background, overlay both algorithm trails — gradient descent's 255-step path snaking down through HK, Newton-Raphson's 5-step direct jump to Mong Kok — and add a marker at the final optimum. The side-by-side comparison is the GIF/screenshot for the README and CV. Once that exists, Phase 1a is complete and we move to Phase 1b: KKT-constrained optimization (must be within a district, must be near MTR, etc.).
+
+**Time spent / mood**
+
+~3 hours. Heaviest math session yet — full chain rule + quotient rule derivation, then implementation, then debugging the step-size failure. Mood: very high. Watching three independently-implemented solvers all land on Mong Kok to 8 decimal places is the most satisfying moment of the project so far. Especially because I derived the gradient and Hessian myself — there's a real "I built this from first principles" feeling that copy-pasting `scipy.minimize` would never give.
+
+---
+
 <!--
 Template for future sessions — copy-paste below this line:
 
