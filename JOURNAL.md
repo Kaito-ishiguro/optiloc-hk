@@ -106,6 +106,48 @@ Session 004: visualize the convergence trails on a Folium map of HK. Plot the po
 ~3 hours. Heaviest math session yet — full chain rule + quotient rule derivation, then implementation, then debugging the step-size failure. Mood: very high. Watching three independently-implemented solvers all land on Mong Kok to 8 decimal places is the most satisfying moment of the project so far. Especially because I derived the gradient and Hessian myself — there's a real "I built this from first principles" feeling that copy-pasting `scipy.minimize` would never give.
 
 ---
+## Session 004 — 2026-04-27 — Eight Trails to Mong Kok
+
+**What I built / learned**
+
+- Built a multi-start variant of the Session 003 solver (`03_solve_weber_multi.py`) that runs both gradient descent and Newton-Raphson from 4 different starting points across HK — Tung Chung (west), Stanley (south), Sai Kung (east), Lok Ma Chau (north) — and saves all 8 convergence trails to a single consolidated CSV.
+- Built `04_visualize_convergence.py` that renders a single Folium HTML map containing: the population heatmap as a background context layer, all 8 convergence trails as polylines (thin dashed for gradient descent, thick solid for Newton-Raphson, color-coded by starting point), 4 starting-point markers, and a gold star at the shared optimum. Added a title bar and legend overlay as baked-in HTML so the artifact stays self-contained when screenshotted.
+- All 8 runs converged to lon=114.17071, lat=22.33729 — Prince Edward MTR — to 5 decimal places. Same answer, regardless of where you start in HK. This is the visual proof of convexity I derived in Session 003: convex objective ⇒ unique global minimum ⇒ any starting point converges to it.
+- Newton-Raphson averaged 5–6 iterations per run vs gradient descent's 290–323. Roughly 50× faster across all 4 starts. This number is now the headline of the project.
+
+**Key insight or aha moment**
+
+Hit a real numerical optimization edge case that I hadn't seen in Session 003. Pure Newton-Raphson from Tung Chung blew up on the first iteration — the unconstrained step landed in a region where the Hessian became near-singular (numerical underflow on $1/d_i^3$ caused `overflow encountered in power`, then `np.linalg.solve` raised `LinAlgError: Singular matrix`). Session 003 didn't catch this because Victoria Harbour is geographically close to the optimum, so Newton's first step was small and harmless. Tung Chung is far enough that the unconstrained step overshot into a degenerate region.
+
+The fix was **damped Newton with backtracking line search**: after computing the Newton step, try the full step first; if the objective doesn't improve, halve the step and retry up to 30 times. This is what every industrial-grade Newton implementation does and is the standard textbook remedy for "Newton can overshoot far from the optimum." Same algorithm, but globally convergent rather than only locally convergent.
+
+The deeper insight: pure mathematical correctness isn't sufficient for a working solver. Session 003's hand-derived gradient and Hessian were already correct — proven by 8-decimal agreement with SciPy BFGS. But correctness only buys you local convergence. Robustness across all starting points requires safeguards that are not in the math itself: line search, trust regions, damping. This is exactly the gap between "implements the formula" and "ships a solver." Now I understand viscerally why SciPy BFGS has hundreds of lines of code wrapping a textbook formula that's three lines long.
+
+**What I got stuck on**
+
+- **Newton step landing on a singular Hessian** from the Tung Chung start. Took maybe 10 minutes to diagnose: `RuntimeWarning: overflow encountered in power` was the leading indicator (in `coef = ws / (d**3)`, some $d_i$ became numerically zero), and `LinAlgError: Singular matrix` from `np.linalg.solve` was the consequence. Once the diagnostic chain was clear, the fix (backtracking line search) was textbook.
+- **PowerShell `Move-Item` failures and missing files** during the file shuffle at the start of the session. Got caught between not being inside the repo directory and forgetting to activate the venv. Lost 5 minutes to environment hygiene. Lesson: always check `(.venv)` and the working directory at the start of a session.
+- **`Move-Item` quirk**: when the destination path looks ambiguous (e.g. `notebooks\` versus `notebooks`), PowerShell treats it as a rename if the folder doesn't exist or has odd permissions. Adding `-Force` and verifying the destination directory exists before moving is the safe pattern.
+
+**Next session's first move**
+
+Phase 1a is complete. The single-facility Weber problem is fully solved on real HK demographic data, hand-derived math, validated against SciPy, with a polished shareable visualization.
+
+Two paths for Session 005:
+
+1. **Phase 1b — KKT-constrained optimization.** Add real geographic constraints: facility must be inside Kowloon district (inequality constraint), at least 200m from a competitor (inequality), within 500m of an MTR exit (inequality). Solve via Lagrangian with KKT conditions, exactly the next chapter in DASE2135. This is the most direct continuation of the math story.
+
+2. **Phase 1c — Multi-facility k-median.** Generalize from one facility to k facilities, alternating between assignment (which demand point goes to which facility) and Weber sub-problems (where to place each facility given its assigned demand). Closer to the Phase 3 logistics product vision (multiple last-mile hubs).
+
+Strong candidate for the next session: **Phase 1b**, because it cleanly extends the existing single-facility solver, demonstrates KKT (the most lecture-relevant material), and the visualization is dramatic — watch the optimum jump from Mong Kok to wherever-the-constraint-allows.
+
+Side action: write a polished README front section pitching the Mong Kok finding, with the Session 004 map as the hero image. This is the artifact recruiters will see first.
+
+**Time spent / mood**
+
+~1.5 hours including the PowerShell file-shuffle drama and the singular-Hessian debugging. Mood: very high. The eight-trails-to-Mong-Kok image is the single best engineering artifact from any of my projects so far. The math, the data, the algorithms, and the geography all came together into one picture that explains itself. This is the kind of work I want my CV to be made of.
+
+---
 
 <!--
 Template for future sessions — copy-paste below this line:
