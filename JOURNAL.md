@@ -148,6 +148,46 @@ Side action: write a polished README front section pitching the Mong Kok finding
 ~1.5 hours including the PowerShell file-shuffle drama and the singular-Hessian debugging. Mood: very high. The eight-trails-to-Mong-Kok image is the single best engineering artifact from any of my projects so far. The math, the data, the algorithms, and the geography all came together into one picture that explains itself. This is the kind of work I want my CV to be made of.
 
 ---
+## Session 005 — 2026-04-28 — KKT Constraints and the Kowloon Boundary
+
+**What I built / learned**
+
+- Hand-derived the **Lagrangian and the four KKT conditions** for constrained NLP — stationarity, primal feasibility, dual feasibility, and complementary slackness — directly from Dr. Kuo's lecture material. Wrote out the math step by step including the standard "$g_j(x) \leq 0$" form, the "$\nabla f + \sum \mu_j \nabla g_j = 0$" force-balance equation, and the shadow-price interpretation of the multipliers.
+- Translated three real-world constraints into the standard form simultaneously: (1) facility must lie within Kowloon district, (2) within 500m of an MTR exit, (3) at least 200m from each of 5 synthetic competitors. Total of 7 inequality constraints active in one optimization problem.
+- Implemented the constrained solver in `05_solve_constrained.py` using SciPy's SLSQP (Sequential Least Squares Programming), which applies KKT internally. Fed in the analytical gradient from Session 003 plus signed-distance constraint functions. Solver converged in 19 iterations.
+- Built `06_visualize_constrained.py` to render the result on a Folium map: population heatmap as background, green Kowloon polygon, 624 MTR exits with their 500m proximity rings, 5 red competitor exclusion zones, plus both the unconstrained (gold) and constrained (red star) optima with a dashed line showing the 427m jump between them.
+- Pulled real geographic data live from OpenStreetMap via `osmnx`: Kowloon polygon (14.5 km²) and all 624 MTR exits in HK. Synthetic competitors only — that data layer becomes a real moat in Phase 3.
+
+**Key insight or aha moment**
+
+The insight that surprised me most was **how to encode constraints**. My first instinct was to write boolean checks ("is the point inside Kowloon? yes/no"). That would be wrong — it produces a step function with a flat plateau and a vertical cliff, and gradient-based optimizers see no slope to descend on a plateau. The correct technique is **continuous signed-distance functions**: $g(x) = $ signed distance from $(x, y)$ to the constraint boundary, negative inside the feasible region and positive outside. This gives the optimizer a smooth gradient that always points toward feasibility, which lets SLSQP converge cleanly.
+
+The deeper realization was that this isn't a special trick for polygons — it's the same idea applied to *any* constraint shape. The MTR constraint becomes "$500m - $ (distance to nearest MTR exit)," which is just a signed distance to the union of 500m circles. The competitor constraint becomes "(distance to competitor) $- 200m$," signed distance to a single circle. Polygon, circle, half-plane, anything — encode it as a continuous distance and the optimizer can descend toward feasibility from anywhere. This generalizes to every constraint I'll ever need.
+
+The geographic insight was equally satisfying. The Kowloon constraint came out **active** with $g_1(x^*) = 0.000000$ — the constrained optimum sits exactly on the polygon boundary. Reading the map revealed why: the unconstrained Mong Kok optimum from Session 003 lies *just barely north of* OSM's "Kowloon" polygon. OSM uses the **historical** Kowloon — the area south of Boundary Street, the original 1860 lease boundary — which is smaller than the colloquial modern usage that includes Kwun Tong, Wong Tai Sin, and Kowloon East. The math forced the optimum 427m southwest to land exactly on the historical district line near Prince Edward MTR. So the project just exposed a real-world data subtlety about how "Kowloon" gets defined administratively versus colloquially.
+
+The MTR constraint came out **inactive** despite there being 624 exits in HK. This is itself a finding: HK's MTR network is so dense that almost any reasonable urban location is already within 500m of an exit, so the transit-proximity constraint never binds. In a less transit-rich Asian city (Bangkok, Manila, Jakarta) the same constraint would do real work. That's a Phase 3 product insight hiding inside a Phase 1 demonstration.
+
+**What I got stuck on**
+
+- **Sign convention between standard form and SciPy.** Wrote constraints in the textbook "$g_j \leq 0$" form, then realized SciPy's `{"type": "ineq", "fun": ...}` expects the *opposite* convention — it wants `fun(x) >= 0` to mean feasible. Resolved by negating each constraint when handing it to SLSQP. The math derivation stays in textbook form for journaling and exam prep; only the SciPy interface flips signs. Worth noting this for future me — the mismatch between mathematical convention and software convention is the kind of thing that costs hours if you don't catch it early.
+- **`lambda` capture in the competitor constraints loop.** First version generated all 5 competitor constraints with a closure that captured the loop variable by reference, so all 5 ended up referring to the last competitor. Fixed using the standard `lambda p, idx=l: ...` default-argument trick to capture by value. This is a Python idiom that catches everyone exactly once and then never again.
+- **Distance-unit conversion.** The math is in degrees because that's what the demand coordinates are in, but the constraints are naturally in meters (500m, 200m). Used a rough constant `M_PER_DEG = 107_000` for HK's latitude. For Phase 2 the right move is to project everything to a metric CRS (e.g. EPSG:2326 HK 1980 Grid) so distances are in meters natively. Phase 1 doesn't need that precision.
+
+**Next session's first move**
+
+Phase 1b is now complete. Phase 1c (multi-facility k-median) is the next algorithmic extension — same Weber objective, but now optimize over $k$ facility locations simultaneously, with each demand point assigned to its nearest facility. The math involves alternating between assignment (Voronoi partition) and Weber sub-problems, plus a discussion of why the joint problem is non-convex even though each sub-problem is convex.
+
+Strong alternative: skip directly to **writing the polished README with both maps as hero images** and treat that as Session 006. Phase 1 is far enough along now to package it cleanly. The unconstrained "8 trails to Mong Kok" map plus the constrained "boundary jump" map plus the math derivations together form a complete portfolio narrative. Better to harvest the storytelling now than push for one more algorithmic extension.
+
+Leaning toward the README option. Multi-facility can be Session 007 or even Phase 2.
+
+**Time spent / mood**
+
+~2.5 hours including the math derivation, the OSM data fetch debugging, the SciPy sign-convention puzzle, and the visualization. Mood: very high. The geographic punchline — that the constraint forced the optimum onto the historical Kowloon boundary, exactly where Boundary Street physically sits — was the moment Phase 1b became more than a math exercise. The project is now teaching me about Hong Kong, not just optimization.
+
+---
+
 
 <!--
 Template for future sessions — copy-paste below this line:
