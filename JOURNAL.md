@@ -187,7 +187,45 @@ Leaning toward the README option. Multi-facility can be Session 007 or even Phas
 ~2.5 hours including the math derivation, the OSM data fetch debugging, the SciPy sign-convention puzzle, and the visualization. Mood: very high. The geographic punchline — that the constraint forced the optimum onto the historical Kowloon boundary, exactly where Boundary Street physically sits — was the moment Phase 1b became more than a math exercise. The project is now teaching me about Hong Kong, not just optimization.
 
 ---
+## Session 006 — 2026-04-28 — Phase 1 Shipped
 
+**What I built / learned**
+
+- Wrote the polished public-facing README that replaces the placeholder skeleton from Session 001. Recruiter-targeted but with technical depth below the fold for interviewers. Embedded three hero images (the eight-trails convergence map plus wide and zoomed views of the KKT-constrained result), the full math derivation summary, the data pipeline diagram, the tech stack, a roadmap of upcoming phases, and the personal "why I built this" framing.
+- Took three screenshots from the existing HTML maps and committed them to `docs/maps/` so the README renders properly on GitHub. The wide-and-zoom pair for the constrained result tells the constraint story more completely than a single shot — wide shows HK's MTR network density (which is why the MTR constraint is inactive), zoomed shows the optimum landing precisely on the Kowloon boundary (which is why the Kowloon constraint is active).
+- Verified the README renders correctly on GitHub: math equations display via native MathJax support, all three images embed inline, the headline finding (Prince Edward MTR / Mong Kok) is readable within the first 30 seconds of skimming.
+- Phase 1 is now officially shipped. Five sessions of build work plus one session of polish equals a complete, defensible, public portfolio piece.
+
+**Key insight or aha moment**
+
+The most useful realization came from the screenshot strategy I proposed myself: instead of a single hero image for the constrained result, use a **wide shot plus a zoomed shot together**. Wide tells the dataset story (look how dense HK's MTR network is — 624 exits whose 500m proximity zones cover almost all populated areas). Zoomed tells the math story (look how precisely the solver landed on the Kowloon boundary). Single screenshots are easier to produce; layered ones tell a richer story. The same dataset, seen at two zoom levels, communicates two different lessons. Going to apply this pattern to future visualizations — every important result probably wants both a "context" view and a "precision" view.
+
+The deeper insight from writing the README: **packaging is its own engineering discipline**. The math, the code, and the maps already existed before this session. None of that work changes the fact that, until today, my repo's front page was a Session 001 skeleton that didn't show what I'd built. One session of "just writing" took the same underlying work from "would impress someone who clicked through five files" to "impresses someone who lands on the page for 60 seconds." That's a leverage ratio I don't want to forget. Every project I build from now on gets a polished README in the same week as the first prototype, not as a "I'll do it later" task.
+
+The third insight is about the recruiter-vs-interviewer audience question. I picked recruiters as primary, and the README structure reflects that: pitch up top (skim-friendly), depth below (interviewer-friendly). Both audiences are served because the same content can be skimmed or read deeply depending on intent. The mistake would be writing two separate documents or splitting the README into "for recruiters" and "for engineers" sections — both audiences are smarter than that and would interpret the split as condescending. One document, layered in depth, serves both.
+
+**What I got stuck on**
+
+- The original README was a skeleton from Session 001 written before I knew what the project would actually become. Resisting the urge to "just edit a few sections" and instead rewriting the whole thing was the right call — partial edits would have left the structure incoherent. Fully rewriting felt slower upfront but produced a cleaner artifact.
+- LinkedIn URL question. I don't have a polished LinkedIn profile yet, so the README has a placeholder for the link. Polishing LinkedIn becomes a separate task — the README doesn't have to wait for it.
+- Image filenames in the README had to match exactly what got committed to `docs/maps/`. Easy to mess up: any typo and the image renders as a broken-image icon on GitHub. Careful triple-check before committing was warranted.
+
+**Next session's first move**
+
+Two clear paths, no urgency on which:
+
+1. **LinkedIn post + LinkedIn project entry.** Convert the README into a 250-word LinkedIn post with the convergence map as the visual, plus add the project to my LinkedIn "Projects" section. Same source material, different audience surface. Highest immediate ROI for summer 2026 internships — recruiters check LinkedIn before GitHub.
+2. **Phase 1c — multi-facility k-median.** Generalize from one facility to k facilities. Mathematically richer (introduces non-convexity, Voronoi assignment, alternating optimization). Closer to the Phase 3 logistics product vision. Better for technical interviews than for recruiter discovery.
+
+Leaning toward LinkedIn next. The technical work is already done; the discovery surface is what's missing.
+
+**Time spent / mood**
+
+~1 hour, mostly writing and screenshot-arranging. No new code. Mood: deeply satisfied. Phase 1 going from "five committed sessions of code" to "one URL I can put on a CV" is a different kind of milestone than each individual technical session was. The math sessions made me feel smart; this session makes the project feel real. Worth pausing to acknowledge.
+
+Phase 1 of OptiLoc HK is shipped. The repo URL is now an artifact I can put on a CV without caveats.
+
+---
 
 <!--
 Template for future sessions — copy-paste below this line:

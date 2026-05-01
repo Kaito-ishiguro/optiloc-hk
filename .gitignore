@@ -216,3 +216,26 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# --- OptiLoc HK additions ---
+
+# Don't commit raw or processed data (often large, easily re-downloadable)
+data/raw/*
+data/processed/*
+# But DO keep the folder structure so the repo layout is visible
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Generated map outputs (regenerable from code)
+docs/maps/*.html
+
+# Local virtual environment
+.venv/
+venv/
+
+# Editor/IDE
+.vscode/
+.idea/
+.DS_Store
+
+# osmnx cache (regenerable)
+cache/
