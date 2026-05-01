@@ -200,7 +200,7 @@ Whether or not that company ever happens, the deeper goal stays the same: **keep
 - 📍 Hong Kong / Kochi, Japan
 - 🎓 HKU IELM, Class of 2028
 - 💼 Open to Summer 2026 internship roles in supply chain, operations research, AI/ML, and software engineering
-- 🔗 [LinkedIn] *(insert your LinkedIn URL here)*
+- 🔗 [LinkedIn] *www.linkedin.com/in/kaito-ishiguro-95a054327*
 
 📂 **Full build journal:** [`JOURNAL.md`](./JOURNAL.md) — every session, dated, with what I learned, what I got stuck on, and what I'm doing next.
 
