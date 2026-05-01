@@ -148,7 +148,7 @@ Side action: write a polished README front section pitching the Mong Kok finding
 ~1.5 hours including the PowerShell file-shuffle drama and the singular-Hessian debugging. Mood: very high. The eight-trails-to-Mong-Kok image is the single best engineering artifact from any of my projects so far. The math, the data, the algorithms, and the geography all came together into one picture that explains itself. This is the kind of work I want my CV to be made of.
 
 ---
-## Session 005 — 2026-04-28 — KKT Constraints and the Kowloon Boundary
+## Session 005 — 2026-05-01 — KKT Constraints and the Kowloon Boundary
 
 **What I built / learned**
 
@@ -187,7 +187,7 @@ Leaning toward the README option. Multi-facility can be Session 007 or even Phas
 ~2.5 hours including the math derivation, the OSM data fetch debugging, the SciPy sign-convention puzzle, and the visualization. Mood: very high. The geographic punchline — that the constraint forced the optimum onto the historical Kowloon boundary, exactly where Boundary Street physically sits — was the moment Phase 1b became more than a math exercise. The project is now teaching me about Hong Kong, not just optimization.
 
 ---
-## Session 006 — 2026-04-28 — Phase 1 Shipped
+## Session 006 — 2026-05-01 — Phase 1 Shipped
 
 **What I built / learned**
 
