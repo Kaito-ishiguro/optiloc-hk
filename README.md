@@ -197,7 +197,7 @@ Whether or not that company ever happens, the deeper goal stays the same: **keep
 
 **Kaito Ishiguro** — second-year BEng Industrial Engineering and Logistics Management student at the University of Hong Kong, concentrating in Intelligent Systems and Automation. Languages: English, Japanese (native), conversational Mandarin, basic functional Thai.
 
-- 📍 Hong Kong / Kochi, Japan
+- 📍 Hong Kong / Osaka, Japan
 - 🎓 HKU IELM, Class of 2028
 - 💼 Open to Summer 2026 internship roles in supply chain, operations research, AI/ML, and software engineering
 - 🔗 [LinkedIn] *www.linkedin.com/in/kaito-ishiguro-95a054327*
