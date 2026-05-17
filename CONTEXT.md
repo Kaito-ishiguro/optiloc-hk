@@ -16,6 +16,50 @@ OptiLoc HK is a Hong Kong facility location optimizer being built by **Kaito Ish
 
 ---
 
+## End-of-session protocol (MANDATORY — follow exactly)
+
+When Kaito says **"wrap up this session"** or **"log this"**, do these four things in order:
+
+**1. Generate the JOURNAL.md entry** following the standard template (see "Journaling workflow" below).
+
+**2. Tell him to paste it into JOURNAL.md and commit:**
+> Paste the entry above at the bottom of your `JOURNAL.md`, save it, then commit:
+> ```
+> git add <files-from-this-session> JOURNAL.md
+> git commit -m "Session NNN: <short description>"
+> git push
+> ```
+
+**3. Always ask the chat-switch question.** After he confirms the commit, ALWAYS ask:
+
+> *"This chat is now [N messages / has covered X sessions / has crossed a major milestone]. Do you want to switch to a new chat in the OptiLoc HK Project? If yes, I'll generate an updated CONTEXT.md with the latest project state and walk you through re-uploading it to Project knowledge."*
+
+Use judgment on whether to recommend switching. Recommend YES if:
+- The chat has covered 2+ full sessions
+- A major milestone just closed (phase complete, new artifact shipped, exam break starting)
+- The chat is over ~50 messages long
+- Claude has started showing signs of context strain (repeating itself, forgetting earlier details)
+
+Recommend NO (or "your call") if:
+- Only one short session has happened
+- We're mid-flow on something that benefits from immediate context
+
+**4. If he says yes to switching, generate a fresh CONTEXT.md** with these updates:
+- Bump the "Current phase" line to reflect the new state
+- Add the latest session(s) to the "Session history (compressed)" section at the bottom
+- Add any new files to the "Codebase reference — file by file" section
+- Update the "Where we are right now" section to reflect the new pause point
+- Update the "Last updated" line at the bottom
+
+Then walk him through the upload process using the standard step-by-step rhythm:
+1. Download the updated CONTEXT.md
+2. Move it into the repo (overwriting the old one): `Move-Item $HOME\Downloads\CONTEXT.md . -Force`
+3. Commit: `git add CONTEXT.md`, `git commit -m "Update CONTEXT.md after Session NNN"`, `git push`
+4. Re-upload to Claude Project knowledge: open the OptiLoc HK Project → delete the old CONTEXT.md from Project knowledge → upload the new version
+5. Start new chat in the Project with prompt: *"Where are we and what's next?"*
+
+---
+
 ## How to work with Kaito
 
 These are non-negotiable working agreements built up across Sessions 001–007. Honor them in every new chat.
@@ -34,8 +78,6 @@ Counter-example to avoid: don't write a long "here's everything you need to do" 
 - He likes **honest engineering feedback over hype**. Tell him when an idea is harder than it looks. Tell him when his instincts are sharp (they often are).
 
 ### Journaling workflow
-
-At the end of any working session that produces new code or insights, **offer to generate a `JOURNAL.md` entry**. Trigger phrases he uses: *"wrap up this session"* or *"log this"*.
 
 The journal entry template:
 
@@ -315,9 +357,16 @@ Kaito is on Windows 11 with PowerShell. These are landmines hit during the proje
 
 ## Where we are right now (the immediate state)
 
-**Last committed:** Session 006 (README polish + Phase 1 shipped). Followed by Integration #1 (condition number analysis) — script committed to `notebooks/07_condition_number.py`. Journal entry for Integration #1 NOT yet written.
+**Last committed:** Session 006 (README polish + Phase 1 shipped). Followed by Integration #1 (condition number analysis) — script committed to `notebooks/07_condition_number.py`. CONTEXT.md added with chat-switch protocol baked in. Journal entry for Integration #1 NOT yet written.
 
 **What's pending:**
+
+### Integration #1 — Journal entry (NOT WRITTEN)
+
+The condition number script is committed. The empirical findings are captured in the "Codebase reference" section above. But the formal JOURNAL.md entry hasn't been written yet. Should cover:
+- The expected vs actual finding (predicted high $\kappa$, actually low)
+- The deeper insight (Weber problem is uniformly well-conditioned but non-quadratic)
+- Why this matters for the exam answer
 
 ### Integration #2 — Strict convexity proof (NOT STARTED)
 
@@ -382,12 +431,13 @@ Whether or not it becomes a company, the deeper goal is: keep building OptiLoc a
 - **Session 005 — KKT-constrained optimization.** Hand-derived Lagrangian + 4 KKT conditions. Encoded 3 real-world constraints as signed-distance functions. Constrained optimum lands on Kowloon boundary; demonstrated complementary slackness empirically. Found historical-Kowloon-boundary geographic insight.
 - **Session 006 — README + Phase 1 shipped.** Polished README, took 3 screenshots, embedded in GitHub. Project is now a defensible portfolio piece. LinkedIn post text drafted; CV bullets drafted.
 - **Integration #1 (mid-Session 007) — Condition number analysis.** Measured $\kappa$ and $\lambda_{\max}$ at 6 points. Found "uniformly well-conditioned, magnitude varies 3.4×" — non-quadratic objective is the real reason GD is slow, not high $\kappa$. Script committed; journal entry not yet written.
+- **CONTEXT.md added with chat-switch protocol (mid-Session 007).** Project handoff doc created. End-of-session protocol now mandates asking about chat switching and offers to generate updated CONTEXT.md if user wants to migrate.
 
 ---
 
 ## Triggers and protocols
 
-- **"wrap up this session"** or **"log this"** → generate journal entry following the template above.
+- **"wrap up this session"** or **"log this"** → generate journal entry following the template above, THEN ask the chat-switch question (see End-of-session protocol).
 - **"let's start session NNN"** → assume Kaito has read this context file and proceed directly into the work.
 - **"don't include this in the file but tell me..."** → give thorough technical explanation outside the journal.
 - **Terminal commands** → ONE step at a time, wait for "done" or error.
@@ -404,8 +454,8 @@ Whether or not it becomes a company, the deeper goal is: keep building OptiLoc a
 - `cache/*.json` — osmnx OpenStreetMap cache (gitignored, regenerable)
 - `.venv/` — Python virtual environment (gitignored)
 
-Files IN Git: README.md, JOURNAL.md, requirements.txt, .gitignore, LICENSE, all `notebooks/*.py`, the three screenshots in `docs/maps/*.png`, `data/raw/.gitkeep`, `data/processed/.gitkeep`.
+Files IN Git: README.md, JOURNAL.md, CONTEXT.md, requirements.txt, .gitignore, LICENSE, all `notebooks/*.py`, the three screenshots in `docs/maps/*.png`, `data/raw/.gitkeep`, `data/processed/.gitkeep`.
 
 ---
 
-*Last updated: end of Integration #1 session, mid-Session 007. Update this file at the end of every session that meaningfully changes project state.*
+*Last updated: chat-switch protocol added, mid-Session 007. Update this file at the end of every session that meaningfully changes project state.*
