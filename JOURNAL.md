@@ -247,6 +247,27 @@ Write `docs/strict_convexity.md` (Integration #2) — the symbolic proof that th
 ~90 min coding + analysis, plus the time it took to stop trusting Lecture 6 and start trusting the numbers. Good post-exam mood — exactly the kind of finding I'd want to remember if this came up in a Phase 2 design discussion.
 
 ---
+## Session 008+009 — 2026-05-20 — Four-solver race shipped
+
+**What I built / learned**
+- Implemented the Weiszfeld algorithm in `notebooks/08_solve_weber_weiszfeld.py` — the FONC-derived fixed-point iteration Prof. Kuo flagged in his email. ~10 lines of NumPy, no hyperparameters, no step-size tuning, no Hessian inversion. Just $x^{(k+1)} = \sum_i (w_i/d_i) x_i \big/ \sum_i (w_i/d_i)$.
+- Extended the comparison harness so all four solvers (Weiszfeld, Newton, BFGS, GD) run from the same Victoria Harbour start and record their full trails per iteration. Output: `solver_comparison.csv` (4-row summary) and `four_solver_trails.csv` (292 trail positions).
+- Built `notebooks/09_visualize_four_solvers.py` producing `docs/maps/04_four_solvers_map.html` — population heatmap with four color-coded convergence trails (purple Weiszfeld, red Newton, teal dashed BFGS, gray dashed GD) all landing on the same Mong Kok optimum. Wide + zoom screenshots committed.
+- Empirical results on 41,288 HK demand points: Weiszfeld 23 iters / 7.6ms, Newton 4 iters / 7.2ms, BFGS 7 iters / 5.5ms, GD 255 iters / 55ms. All four converge to the same optimum to within $7.7 \times 10^{-9}$ degrees (sub-millimeter on the ground).
+
+**Key insight or aha moment**
+Weiszfeld *ties* Newton on wall-clock despite Newton's quadratic convergence rate (4 iterations) vs Weiszfeld's linear rate (23 iterations). This contradicts the naïve reading of convergence analysis, but resolves cleanly: convergence rate is about *iteration count*, but the user cares about *time*, and Time = iterations × per-iteration cost. Newton's per-iteration cost is ~6× Weiszfeld's because it computes and factorizes the $2 \times 2$ Hessian; Weiszfeld just does one weighted average. On 2D Weber, the per-iteration cost gap cancels the asymptotic-rate advantage. The deeper lesson: linear convergence with cheap iterations beats quadratic convergence with expensive iterations on small problems — and the cheap iteration is also what makes Weiszfeld foolproof in the multi-start setting Phase 1c will need.
+
+**What I got stuck on**
+First run of the comparison harness showed Newton hitting `max_iter=100` instead of converging in ~5 iterations. Took a beat to realize it wasn't a Newton bug — it was a tolerance mismatch. The new harness used a tighter gradient-norm tolerance ($10^{-8}$) than Session 003, and Newton's $\|\nabla f\|$ never quite reached that bound because of floating-point noise in the `sqrt` inside the distance function. Fixed by switching Newton's convergence criterion to step-size ($\|x_{\text{new}} - x\| < \varepsilon$), matching Weiszfeld's. Same final answer, honest iteration count. Worth remembering for future benchmarking: convergence criteria must be consistent across solvers, or the comparison lies.
+
+**Next session's first move**
+Reply to Prof. Kuo's email with the four-solver comparison table, the wide+zoom screenshots, and a commitment to integrate the Esri China HK Outline Zoning Plans dataset as the next step (Session 010). Use the real numbers (23 iterations, 7.6ms, agreement to $10^{-9}$ degrees) rather than the predicted ones.
+
+**Time spent / mood**
+~3 hours including the convergence-rate lesson and the BFGS sidebar. Mood: validated. Prof was right that Weiszfeld was the missing piece — it's the algorithm-of-fit for the multi-start k-median in Phase 1c specifically because it has no failure modes. Also feels right that the public repo now carries an artifact responding directly to his suggestion *before* the email reply lands.
+
+---
 
 
 <!--
