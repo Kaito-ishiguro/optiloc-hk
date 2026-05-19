@@ -226,6 +226,28 @@ Leaning toward LinkedIn next. The technical work is already done; the discovery 
 Phase 1 of OptiLoc HK is shipped. The repo URL is now an artifact I can put on a CV without caveats.
 
 ---
+## Session 007 (Integration #1) — 2026-05-17 — Conditioning vs curvature
+
+**What I built / learned**
+- Wrote `notebooks/07_condition_number.py` — evaluates the Hessian at 6 points across HK (optimum + 5 spread across the territory), computes eigenvalues, condition number $\kappa$, and theoretical optimal step size $\alpha_{\text{opt}}$ at each
+- Empirical finding: $\kappa$ ranges 1.24–3.25 everywhere. The Weber problem is **uniformly well-conditioned** across HK
+- $\lambda_{\max}$ varies by 3.4× across space — the Hessian's magnitude is non-constant, signature of a non-quadratic objective
+- Our chosen $\alpha = 10^{-9}$ was 8–45× smaller than $\alpha_{\text{opt}}$ at every test point, fully explaining why GD took 255 iterations vs Newton's 5
+
+**Key insight or aha moment**
+I expected to confirm Lecture 6's textbook story — "high $\kappa$ ⇒ slow GD" — and instead found the opposite. $\kappa$ is small everywhere; the real culprit is that $f(x,y)$ isn't quadratic. Lecture 6's analysis (and the standard $1/L$ step-size bound) implicitly assumes a fixed Hessian, in which case a single constant $\alpha$ can be globally optimal. Weber violates that: the Hessian's magnitude changes by 3.4× depending on where you stand. No single $\alpha$ works well everywhere — aggressive enough for regions of large $\lambda_{\max}$ means divergence elsewhere; safe enough for small $\lambda_{\max}$ means crawling near the answer. Newton's $H^{-1}$ rescales each step to local curvature automatically, which is why it converges in 5 iterations regardless of starting point. Constant-$\alpha$ GD structurally can't.
+
+**What I got stuck on**
+The reconciliation. I'd primed myself on the textbook "high $\kappa$" explanation and the empirical numbers didn't match. Spent a while double-checking the eigenvalue computation before realizing the textbook bound assumes a quadratic. Once I noticed that $\lambda_{\max}$ varies 3.4× across space — not just at the optimum — the non-quadratic interpretation clicked. Worth flagging for future me: Lecture 6's analysis is tight for least-squares / quadratic problems and shouldn't be cited for Weber without that caveat.
+
+**Next session's first move**
+Write `docs/strict_convexity.md` (Integration #2) — the symbolic proof that the Weber Hessian is strictly PD given non-collinear demand points. Integration #1 already supports this empirically (both eigenvalues positive at all 6 test points); this is the formal complement.
+
+**Time spent / mood**
+~90 min coding + analysis, plus the time it took to stop trusting Lecture 6 and start trusting the numbers. Good post-exam mood — exactly the kind of finding I'd want to remember if this came up in a Phase 2 design discussion.
+
+---
+
 
 <!--
 Template for future sessions — copy-paste below this line:
