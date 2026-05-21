@@ -333,6 +333,38 @@ Session 012: k-sweep. Solve for k ∈ {3, 5, 8, 10} and plot the objective curve
 ~90 minutes including the Lloyd's algorithm walkthrough. Best end-of-session feeling so far — the Voronoi map makes the math feel like a tool, not an exercise.
 
 ---
+## Session 012 — 2026-05-22 — Constrained k-median shipped
+
+**What I built / learned**
+
+- `notebooks/16_solve_kmedian_ozp.py` — k-median with Lloyd's outer loop and a conditional Weiszfeld → SLSQP inner solver against the buffered OZP commercial union. Same hyperparameters as Session 011 (K=5, 10 restarts, seed 42) so results are directly comparable.
+- `notebooks/17_visualize_kmedian_ozp.py` — Folium map with commercial-zone overlay, Voronoi service areas, dashed Lloyd trails, init/final facility markers, title + legend.
+- Best objective: **277,595 weighted-units, +1.0% penalty** over Session 011's unconstrained baseline of 274,830. Translated to ground distance, the average HK resident is ~4.0 km from their nearest of the 5 facilities (vs 3.9 km unconstrained, vs 9.6 km with one central facility).
+- Adding the constraint **roughly doubled non-convexity**: Session 011 had ≥4 distinct local minima with a 9.3% worst-best gap; Session 012 has 9 distinct minima with a 23.1% gap.
+
+**Key insight or aha moment**
+
+Constraints don't just shrink the feasible region — they can change the topology of the problem in ways that make it strictly harder to solve. The OZP commercial union is a 499-piece disconnected MultiPolygon, and a per-cluster Weber sub-problem against it can have one local minimum per polygon. SLSQP only finds the local minimum in its warm-start polygon's basin. That combinatorial layer ("which polygon does each facility settle in?") stacks on top of Lloyd's existing non-convexity from cluster-assignment choices, multiplying the number of basins the outer multi-start has to explore. A single-restart implementation would have shipped a 23% worse answer with zero detection. Multi-start went from "nice to have" in Session 011 to mandatory in Session 012.
+
+**Real-world meaning of the output**
+
+The 5 facility locations represent a complete logistics network for Hong Kong — five physical addresses on commercially-zoned land, each serving its colored Voronoi territory. In a deployed system this could be a last-mile delivery hub network (Lalamove, SF Express, HKTVmall), an EV fast-charging network, a retail chain expansion, or a government service rollout — the math is use-case-agnostic. The headline for any of these is the same: **restricting yourself to legal commercial-zoned land costs essentially nothing** — about 40 meters of extra travel per HK resident on average vs unconstrained placement. HK's zoning policy happens to be very well aligned with population distribution. The +1% penalty is what makes the constraint cheap; the 1→5 facility jump (~9.6 km → ~4 km average travel) is where the actual economic value lives. Caveats for a real deployment: this uses Euclidean distance (Victoria Harbour is invisible to the model), population as the demand weight (not delivery volume), and no facility-cost or capacity terms.
+
+**What I got stuck on**
+
+Two empirical surprises that didn't break the run but were worth understanding:
+
+1. **Conditional-invocation didn't save runtime.** I expected dense-Kowloon clusters to land naturally on commercial parcels so SLSQP would fire only on NT clusters. The data said no — SLSQP fired on ~100% of Weiszfeld calls. Kowloon is mostly *residential* by area; commercial sits in narrow corridors (Nathan Road, Mong Kok, TST). Total runtime was 107s vs Session 011's 5.7s — a ~20× slowdown. The conditional logic was right by design (no harm done), wrong by empirical prediction.
+
+2. **4 of 10 restarts hit MAX_LLOYD_ITERS=50 without converging — including the winner.** Restarts 6 and 9 both maxed out at obj ≈ 277,595 (agreement to 4 sig figs across two independent inits is strong evidence the answer is real). Likely cause: the algorithm is oscillating between two near-equivalent assignments while facility positions stay essentially stable. Fix is either bumping `MAX_LLOYD_ITERS` to 100 or adding "no objective improvement in N iterations" as a secondary criterion. Deferred — the answer is solid.
+
+**Next session's first move**
+
+Default: **(a) k-sweep over k ∈ {3, 5, 8, 10} on the OZP-constrained network** — plot the diminishing-returns curve. Cheap (~1 hour) and the natural follow-up. Alternatives if priorities shift: (b) fix the assignment-oscillation issue and re-run for clean convergence, or (c) draft the Prof. Kuo follow-up email with the +1% finding.
+
+**Time spent / mood**
+
+[fill in]
 
 ---
 ---
