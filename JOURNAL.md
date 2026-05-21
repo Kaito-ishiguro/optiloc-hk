@@ -268,8 +268,76 @@ Reply to Prof. Kuo's email with the four-solver comparison table, the wide+zoom 
 ~3 hours including the convergence-rate lesson and the BFGS sidebar. Mood: validated. Prof was right that Weiszfeld was the missing piece — it's the algorithm-of-fit for the multi-start k-median in Phase 1c specifically because it has no failure modes. Also feels right that the public repo now carries an artifact responding directly to his suggestion *before* the email reply lands.
 
 ---
+## Session 010 — 2026-05-20 — OZP Commercial Constraint
 
+**What I built / learned**
+- Built a 4-script pipeline hitting Esri China HK's public ArcGIS REST feature service: paginated fetch of all 11,963 Outline Zoning Plan polygons (`10_fetch_ozp.py`), filter + union to C + CDA only (`11_filter_and_union_ozp.py`), Weber solver with the new constraint (`12_solve_constrained_ozp.py`), and the comparison map (`13_visualize_ozp_constrained.py`). Discovery pattern was metadata-driven: item ID → AGOL sharing API → service URL → metadata → paginated query.
+- Empirical finding: HK has only **10.30 km² of C+CDA zoning** across 590 source polygons (499 disjoint after unioning) — 0.9% of HK's 1,106 km² land area. The new feasibility region is ~5× smaller and 499× more topologically complex than Session 005's coarse Kowloon polygon.
+- OZP-constrained Weber optimum: **(114.16944, 22.33321)** — Shek Kip Mei, sitting on the boundary of a small C-zoned polygon at the MTR station. ~474 m southwest of the unconstrained answer.
+- The ArcGIS discovery + paginate + cache pattern maps directly to GCP idioms (sharing API ≈ service discovery, paginated FeatureServer query ≈ Cloud Function with Scheduler trigger, cached 120 MB GeoJSON ≈ GCS bucket as cache layer). High ACE-relevance.
 
+**Key insight or aha moment**
+The map-with-street-labels caught something I had been confidently wrong about for five sessions. Session 003's "Mong Kok / Prince Edward MTR" optimum at lat 22.33729 is actually **1.5 km north** of Prince Edward MTR, in the Sham Shui Po / Shek Kip Mei area. The reason is real geographic math: the New Territories holds >50% of HK's population, so the weighted geometric median is pulled north of urban Kowloon. Calling it "Mong Kok" was lazy pattern-matching against coordinates that *look* like they should be Mong Kok if you don't actually look at a map. The bigger lesson: visualize with real-world labels, not just lat/lon dots — labels surface errors that pure numerics can't. The same map also exposed a second mislabel: Session 005's "Kowloon polygon" doesn't appear to be the historical 1860 Kowloon south of Boundary Street — the constrained answer lands at the Beacon Hill ridge, well north of Boundary Street. The OSM polygon's actual provenance now needs re-investigation. Both errors are fixed in the updated CONTEXT.md.
+
+**What I got stuck on**
+- **SLSQP hit `maxiter=200`** (Exit mode 9, "Iteration limit reached") rather than formally converging. The result is correct to floating-point precision (`g_ozp(x*) ≈ -3 × 10⁻⁹`, optimum geometrically on a polygon boundary), but the formal convergence stamp is missing. Cause: the signed-distance constraint to a 499-piece MultiPolygon has a non-smooth gradient at polygon corners and along medial axes between adjacent polygons. SLSQP's numerical Jacobian via finite differences produces noisy gradient estimates → line-search struggle. Three candidate fixes: analytical constraint Jacobian (complex), buffer the union by ~1e-6 degrees to smooth corners (cheap, probably effective), switch to `trust-constr` (different API).
+- **Pagination's last page took exactly 60 s** = the `requests` timeout value. 0.1 s slower and `ReadTimeout` would have killed it and I'd have 9,963 features instead of 11,963. Pure luck. Production version needs 120 s timeout + exponential-backoff retry.
+- **Email to Prof. Kuo (sent earlier today) says "Mong Kok optimum."** Visibly wrong on any properly-labeled map. Probability he verifies coordinates is low; if it comes up, the truthful correction ("the actual location is Sham Shui Po / Shek Kip Mei — the NT pulls the centroid north of urban Kowloon") is a more interesting finding than the original "Mong Kok" claim anyway.
+
+**Next session's first move**
+Session 010b — try the cheapest of the three SLSQP smoothness fixes: buffer the MultiPolygon by `1e-6` degrees (~10 cm) to smooth corner kinks, re-run, see if SLSQP terminates with Exit mode 0 instead of Mode 9. If not, fall back to `trust-constr` with `NonlinearConstraint`. ~30 minutes total. After that, Session 011 — multi-facility k-median with Weiszfeld in the Lloyd's inner loop.
+
+**Time spent / mood**
+~3 hours, focused. Two of the better findings of the whole project so far came from things going *wrong* — SLSQP's `maxiter` forced a deeper read on constraint smoothness, and the visualization caught a coordinate mislabel I'd been carrying unverified across five sessions. The "treat failure as pedagogical" rule paid off twice. ACE-relevance was unusually high — the ArcGIS discovery + pagination + cache pattern is almost exactly what a Cloud Function consumer of upstream APIs looks like.
+
+---
+## Session 010b — 2026-05-21 — Buffer-smoothed SLSQP
+
+**What I built / learned**
+- Added `.buffer(1e-6)` to the OZP commercial union in `12_solve_constrained_ozp.py` to smooth the 499-piece MultiPolygon's corner kinks at sub-millimeter scale.
+- SLSQP now terminates with Exit mode 0 in 16 iterations (was Exit mode 9 / 200 iterations).
+- Optimum unchanged to floating-point precision: (114.169442, 22.333212), with g_ozp(x*) ≈ -5.3e-11 (even tighter on the boundary than before).
+- Cleaned up two longstanding geographic mislabels in the script's print block: Mong Kok → Sham Shui Po, Kowloon historical boundary → Beacon Hill ridge (OSM Kowloon polygon).
+
+**Key insight or aha moment**
+The non-smoothness in Session 010's constraint Jacobian was localized — concentrated at polygon corners and medial axes between adjacent polygons. Rounding those corners with a ~10 cm arc (1e-6 degrees) was enough to give SLSQP's finite-difference gradient estimate a smooth signal to chase. The reason the buffer works without distorting the problem: the OZP polygon data itself was digitized at meter-scale precision by Lands Department, so a 10 cm round-off is well below the data's noise floor. trust-constr fallback wasn't needed. Same answer, but now with a formal Exit mode 0 convergence stamp.
+
+**What I got stuck on**
+Nothing this session — buffer worked on first try. The conceptual part (why finite differences need smooth gradients in the first place) was the only thing that needed unpacking.
+
+**Next session's first move**
+Session 011: implement multi-facility k-median.
+
+**Time spent / mood**
+~30 minutes. Satisfying closure on a known wart.
+
+---
+## Session 011 — 2026-05-21 — k-median network
+
+**What I built / learned**
+- Implemented Lloyd's algorithm + Weiszfeld inner solver in `notebooks/14_solve_kmedian.py` for the multi-facility k-median problem (k=5, 10 weighted-random restarts, max 50 Lloyd iters, step-size tol 1e-7 on Weiszfeld).
+- Wrote `notebooks/15_visualize_kmedian.py` rendering the result as a Folium map with Voronoi service-area polygons (via shapely.ops.voronoi_diagram clipped to an HK bbox), dashed convergence trails, and init+final facility markers.
+- Best objective across 10 restarts: 274,830 weighted-units. 59.1% reduction from the single-facility Weber baseline (671,466 from Session 003).
+- Multi-start found ≥4 distinct local minima from 10 random inits; worst-best gap was 9.3%. Total runtime 5.74s for ~1000 Weber sub-solves.
+
+**Key insight or aha moment**
+Lloyd's decomposes a non-convex joint problem (find both assignments AND facility locations simultaneously) into two convex sub-problems alternated until convergence — each step decreases the objective monotonically, so convergence is guaranteed, but only to a local minimum. The empirical proof of non-convexity was striking: 10 random inits, ≥4 distinct local optima, 9.3% spread between best and worst. If I'd run one restart and gotten unlucky, I'd have shipped a measurably worse answer with no way of knowing. Multi-start isn't a polish step on k-median; it's required. Weiszfeld is what makes the multi-start budget feasible — 1000 Weber sub-solves in 5.74s with zero failure modes. Newton would have been per-call faster but at least one of those 1000 calls would likely have hit a singular Hessian (we saw exactly this fragility in Session 004 from the Tung Chung start). The 5 facilities ended up spanning HK sensibly: western NT, NW NT, northern NT, central Kowloon, eastern Kowloon — two in the dense spine, one in each peripheral region.
+
+**What I got stuck on**
+Conceptual: hadn't seen Lloyd's before. The "joint problem hard because assignment $a$ is combinatorial, but each sub-problem easy" framing was the unlock — it turns this from "another iterative algorithm" into "a general pattern (alternating optimization) I should expect to see elsewhere, including k-means clustering." Nothing got stuck in code; both scripts ran first try.
+
+**Next session's first move**
+Session 012: k-sweep. Solve for k ∈ {3, 5, 8, 10} and plot the objective curve to see diminishing returns. Alternative branches: re-introduce the OZP commercial constraint per-cluster (combines Sessions 010 and 011), or GCP/Phase 1d work tied to ACE study. Pick at session start.
+
+**Time spent / mood**
+~90 minutes including the Lloyd's algorithm walkthrough. Best end-of-session feeling so far — the Voronoi map makes the math feel like a tool, not an exercise.
+
+---
+
+---
+---
+---
+---
 <!--
 Template for future sessions — copy-paste below this line:
 

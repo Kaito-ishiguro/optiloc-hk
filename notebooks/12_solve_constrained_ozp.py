@@ -82,7 +82,7 @@ def main():
 
     print(f"Loading OZP commercial union from {UNION_PATH.name} ...")
     ozp_gdf = gpd.read_file(UNION_PATH)
-    union_geom = ozp_gdf.iloc[0].geometry
+    union_geom = ozp_gdf.iloc[0].geometry.buffer(1e-6)
     print(f"  {len(union_geom.geoms)} disjoint polygons, "
           f"{ozp_gdf.iloc[0]['total_area_km2']} km^2")
 
@@ -115,8 +115,8 @@ def main():
 
     # Three-way comparison
     print("\nComparison:")
-    print(f"  Unconstrained (Session 003):  (114.17071, 22.33729)  Mong Kok / Prince Edward")
-    print(f"  Kowloon-constrained (S 005):  (114.17323, 22.34038)  Kowloon historical boundary")
+    print(f"  Unconstrained (Session 003):  (114.17071, 22.33729)  Sham Shui Po / Shek Kip Mei")
+    print(f"  Kowloon-constrained (S 005):  (114.17323, 22.34038)  Beacon Hill ridge (OSM Kowloon polygon)")
     print(f"  OZP-constrained (this run):   ({result.x[0]:.5f}, {result.x[1]:.5f})")
 
     # Shift from unconstrained, rough conversion to meters at HK latitude
