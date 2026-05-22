@@ -389,6 +389,70 @@ Session 013 — k-sweep diminishing returns. Solve OZP-constrained k-median for 
 ~1 hour strategic conversation. Mood: energized. The project finally has a North Star that's honest about what it takes to be a real money-making thing vs. what it takes to be a great portfolio piece. Both paths legitimate; ROADMAP supports either.
 
 ---
+## Session 013 — 2026-05-22 — k-sweep diminishing returns
+
+**What I built / learned**
+- notebooks/18_ksweep_ozp.py: outer k-loop wrapping Session 012's solver via
+  importlib, sweeping k ∈ {3,5,8,10,15,20} with 10 multi-start restarts each;
+  fresh RNG(42) per k for reproducibility; checkpoint CSVs written after each k.
+- notebooks/19_visualize_ksweep.py: two-panel diminishing-returns chart
+  (objective vs k with multi-start min-max band, per-point % reduction labels,
+  worst-best gap bars with convergence-rate annotations).
+- notebooks/20_visualize_ksweep_maps.py: 2×3 panel gallery showing the best
+  hub network at each k with Voronoi service areas, weighted demand hexbin
+  background, and OZP commercial overlay.
+- CSV outputs: ksweep_ozp_summary.csv, ksweep_ozp_all_restarts.csv,
+  ksweep_ozp_best_facilities.csv.
+- Reproducibility check: k=5 inside the sweep exactly matched Session 012's
+  277,595 ✓. Total sweep runtime 6.3 min (faster than the 20-min estimate).
+
+**Key insight or aha moment**
+The two charts tell two different stories that have to be read together. The
+diminishing-returns curve says "elbow around k=8-10, beyond which each marginal
+facility buys progressively less coverage" — the quantitative argument for a
+CAPEX trade-off. The spatial gallery reveals what's actually happening
+geographically: as k grows, marginal hubs cluster in already-dense urban areas
+(Kowloon, north HK Island), not in underserved NT or outer islands. The
+total-weighted-distance objective concentrates capacity where there's already
+population. That's the right behavior for an EV-utilization or last-mile
+customer chasing throughput, and the wrong behavior for a public-health
+customer chasing equitable rural coverage. The objective function determines
+which customer profile we're serving. Different customers literally need
+different solvers.
+
+**What I got stuck on**
+Mid-session I lost track of what each chart layer represented (the % labels,
+the multi-start band, the X/10-converged annotations) and had to walk back
+through them. Also flagged but didn't fix: the convergence-rate dropoff at
+k=20 (5/10 restarts hit MAX_LLOYD_ITERS) — the Session 012 oscillation issue
+amplifies with k. Candidate later fix: change Lloyd's stop criterion from
+"assignment vector unchanged" to "max facility shift < ε." Minor mechanical
+hurdle: file 16 isn't importable normally because module names can't start
+with a digit; importlib.util.spec_from_file_location handled it cleanly.
+
+**Next session's first move**
+ROADMAP Phase 1: Session 014 = Dockerize the solvers and wrap them in FastAPI.
+First step is writing the Dockerfile + pinning requirements.txt, building the
+image locally, hitting a /solve endpoint with a sample request body. Two
+sessions out, this becomes the artifact deployed to Cloud Run.
+
+**Time spent / mood**
+~2 hours, energizing. First session where the visible outputs (the chart and
+the map gallery) felt directly landing-page-ready, not just "portfolio piece
+for the class." Reproducibility check passing on the first run was satisfying.
+
+**Real-world meaning of the output**
+Two artifacts are now sellable as customer-discovery anchors:
+- "How many hubs is enough for HK?" chart: canonical diminishing-returns
+  curve with the elbow at k≈8-10. Translates to "10 hubs gets you 74% of the
+  achievable coverage; 20 hubs only buys you another 9pp." Pairs naturally
+  with "what's your CAPEX target?" in a first conversation.
+- "Where the hubs land at each scale" map gallery: six side-by-side hub
+  networks. Reveals that marginal hubs concentrate in urban density at high k.
+Caveat: distances are still Euclidean great-circle, not road-network. The
+SHAPE of the trade-off is sellable today; absolute km claims are not yet.
+Road-network distance is Session 016 per ROADMAP — the blocking math
+foundation before first paid pilot.
 
 ---
 ---
