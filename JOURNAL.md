@@ -367,7 +367,29 @@ Default: **(a) k-sweep over k ∈ {3, 5, 8, 10} on the OZP-constrained network**
 [fill in]
 
 ---
+## Inter-session — 2026-05-22 — Strategic pivot & roadmap
+
+**What I built / learned**
+- Tore down the AI-drafted "OptiLoc B2B SaaS Business Plan" PDF; rebuilt as a realistic 5-phase roadmap.
+- Decided HK-only through at least Session ~40. EV charging as default vertical, flexible to any sector that generates ops-director conversations.
+- Locked in: math foundations (road-network distance, capacitated p-median) are NON-skippable blocking dependencies before customer discovery starts.
+- Hybrid open-source: `optiloc-core` stays public (math library), `optiloc-app` becomes private when built in Phase 3.
+- Shipped `docs/ROADMAP.md` (commit `57b630d`) as the canonical product/business reference. Companion to CONTEXT.md and MATH.md.
+
+**Key insight or aha moment**
+The original "make this a profitable SaaS" framing was wrong. Realistic version: this is a *consulting funnel* that might productize into SaaS once 5+ pilots reveal what the standard workflow actually is. The math is a foot-in-the-door, not a moat. The real moat is HK-specific data + customer relationships built over 18-24 months. My deeper goal isn't revenue first — it's getting reps pitching and presenting to ops directors. Revenue follows that.
+
+**What I got stuck on**
+The original B2B SaaS plan PDF I uploaded was generic AI-template work with real errors: pricing invented, "10% cost reduction" overclaim, made-up dark-kitchen use case, Supabase contradicting the GCP plan. Useful exercise to see what AI-generated business plans look like vs. what a tailored plan needs.
+
+**Next session's first move**
+Session 013 — k-sweep diminishing returns. Solve OZP-constrained k-median for k ∈ {3, 5, 8, 10, 15, 20}, plot objective vs k. This chart becomes the headline visual on the Phase 1 landing page.
+
+**Time spent / mood**
+~1 hour strategic conversation. Mood: energized. The project finally has a North Star that's honest about what it takes to be a real money-making thing vs. what it takes to be a great portfolio piece. Both paths legitimate; ROADMAP supports either.
+
 ---
+
 ---
 ---
 <!--
