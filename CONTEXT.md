@@ -10,9 +10,16 @@ OptiLoc HK is a Hong Kong facility location optimizer being built by **Kaito Ish
 
 **https://github.com/Kaito-ishiguro/optiloc-hk**
 
-**Current phase:** Phase 1 complete, plus seven extensions shipped — Integration #1 (condition number analysis), Sessions 008+009 (Weiszfeld solver + four-solver convergence visualization), Session 010 (ArcGIS / OZP commercial zoning integration), Session 010b (SLSQP buffer-smoothness fix), and Session 011 (multi-facility k-median with Lloyd's algorithm + Voronoi visualization). **Phase 1c (multi-facility network optimization) is shipped.** The DASE2135 final exam was on **May 11, 2026 (in the past)** so no exam pressure. Prof. Kuo has emailed back acknowledging the project and offering UG research collaboration; the reply email with four-solver results was sent at the start of the Session 010 chat. **FWD Group internship starts June 8, 2026 (~2.5 weeks away).**
+**Current phase:** Phase 1 complete, plus eight extensions shipped — Integration #1 (condition number analysis), Sessions 008+009 (Weiszfeld solver + four-solver convergence visualization), Session 010 (ArcGIS / OZP commercial zoning integration), Session 010b (SLSQP buffer-smoothness fix), Session 011 (multi-facility k-median + Voronoi visualization), and **Session 012 (OZP-constrained k-median network with real-world interpretation)**. **Phase 1c+ (multi-facility network optimization, both unconstrained and OZP-constrained) is shipped.** The DASE2135 final exam was on May 11, 2026 (in the past) so no exam pressure. Prof. Kuo has emailed back acknowledging the project and offering UG research collaboration; the reply email with four-solver results was sent at the start of the Session 010 chat. **FWD Group internship starts June 8, 2026 (~2 weeks away as of Session 013 default start).** Kaito is studying for the **Google Cloud Associate Cloud Engineer (ACE) certification** and has ~HKD 2,000 (~USD 255) in free GCP trial credit.
 
-**The immediate pending task at the start of this new chat:** pick the Session 012 direction. Three well-scoped candidates. **(a) k-sweep diminishing returns** — solve k-median for k ∈ {3, 5, 8, 10}, plot objective vs k. Cheap (~1 short session); the natural empirical follow-up to Session 011. **(b) k-commercial-hubs** — combine Sessions 010 and 011 by re-introducing the OZP commercial zoning constraint per-cluster (each Lloyd update becomes a constrained Weber sub-solve). More ambitious (~1-2 sessions); the most realistic "real logistics network" framing and the right thing to send Prof. Kuo as a follow-up. **(c) Phase 1d GCP deployment** — containerize as FastAPI, deploy to Cloud Run, tied to ACE cert study. ~3 sessions. The Session 011 journal entry queues (a) as the default; full trade-off in the "Where we are right now" section below.
+**The immediate pending task at the start of this new chat:** pick the Session 013 direction.
+
+- **(a) k-sweep diminishing returns — DEFAULT.** Solve OZP-constrained k-median for k ∈ {3, 5, 8, 10}, plot objective vs k. Cheap (~1 hour), the natural empirical follow-up to Session 012. Wraps `notebooks/16_solve_kmedian_ozp.py`'s main loop in an outer k-loop, saves a comparison CSV, plots a diminishing-returns curve.
+- **(b) Oscillation fix.** 4/10 Session 012 restarts hit `MAX_LLOYD_ITERS=50` without converging, including the winner (restarts 6 and 9 both ended at obj ≈ 277,595 — same basin to 4 sig figs). Likely cause: assignment-vector oscillation around stable facility positions. Either bump max-iters to 100 or add "no objective improvement in N iterations" as secondary convergence. ~30 min. Tidy-up rather than new ground.
+- **(c) Phase 1d Session A — Docker + FastAPI wrap.** ~2 hours. The GCP onramp that doesn't need GCP knowledge yet; containerizes the existing solvers and wraps them in an HTTP API with auto-generated Swagger docs at `/docs`. Deliverable is a portable Docker image. Full GCP phasing (see "Phase 1d" section below) puts the Cloud Run deploy at Sessions 015-016, timed for around internship start.
+- **(d) Draft the Prof. Kuo follow-up email** with the +1.0% finding as headline. The OZP-constrained k=5 result combines his two suggestions (Weiszfeld + ArcGIS) into one substantive empirical result.
+
+Recommended pick: **(a)** as Session 013, with (c) as Session 014. (b) can be merged into (a) if Kaito wants a clean k-sweep.
 
 ---
 
@@ -56,7 +63,7 @@ Then walk him through the upload process using the standard step-by-step rhythm:
 2. Move it into the repo (overwriting the old one): `Move-Item $HOME\Downloads\CONTEXT.md . -Force`
 3. Commit: `git add CONTEXT.md`, `git commit -m "Update CONTEXT.md after Session NNN"`, `git push`
 4. Re-upload to Claude Project knowledge: open the OptiLoc HK Project → delete the old CONTEXT.md from Project knowledge → upload the new version
-5. Start new chat in the Project with prompt: *"Where are we and what's next?"*
+5. Start new chat in the Project with prompt: *"Where are we and what's next?"* (or with the session number directly: *"Session NNN: <direction>"* — the latter is more token-efficient).
 
 ---
 
@@ -74,9 +81,10 @@ Counter-example to avoid: don't write a long "here's everything you need to do" 
 
 - He learns through **visual and interactive examples connecting math to real applications**.
 - He likes **full hand-derivations** (chain rule step by step) when learning new math.
-- When something fails (gradient descent overshoot, singular Hessian, Newton hitting max_iter from tolerance mismatch, SLSQP hitting maxiter on a non-smooth constraint), **treat the failure as pedagogical**. He values seeing real failure modes more than getting clean answers on the first try.
-- He likes **honest engineering feedback over hype**. Tell him when an idea is harder than it looks. Tell him when his instincts are sharp (they often are).
-- **The math-concept-tutor skill** at `/mnt/skills/user/math-concept-tutor/SKILL.md` is the canonical format for any new math concept he asks about. It mandates: real-world hook → visual diagram → concept explanation → vocabulary → connection. Use it. (Confirmed working in Session 011's Lloyd's algorithm walkthrough.)
+- When something fails (gradient descent overshoot, singular Hessian, Newton hitting max_iter from tolerance mismatch, SLSQP hitting maxiter on a non-smooth constraint, Lloyd hitting max-iters on assignment oscillation), **treat the failure as pedagogical**. He values seeing real failure modes more than getting clean answers on the first try.
+- He likes **honest engineering feedback over hype**. Tell him when an idea is harder than it looks. Tell him when his instincts are sharp (they often are). Tell him when your prior (the AI's) was wrong — Session 012 surfaced one such case (conditional-invocation runtime savings prediction was wrong).
+- **The math-concept-tutor skill** at `/mnt/skills/user/math-concept-tutor/SKILL.md` is the canonical format for any new math concept he asks about. It mandates: real-world hook → visual diagram → concept explanation → vocabulary → connection. Use it. (Confirmed working in Session 011's Lloyd's walkthrough and Session 012's constrained-Weber-as-Lloyd-inner-solver explanation.)
+- **Real-world interpretation matters as much as math.** Session 012 spent ~30% of chat time on "what does this map actually mean for a real logistics deployment" — that's not a detour, that's the bridge from coursework to portfolio. When shipping a new result, briefly translate it into deployment terms (avg km per resident, cost penalty in human units, what business use cases this maps to). The math is the value; the interpretation is what makes it sellable.
 
 ### Journaling workflow
 
@@ -101,6 +109,8 @@ One concrete specific action.
 Optional but valuable.
 ```
 
+Optional bonus section: **Real-world meaning of the output** — used in Session 012's entry when the session shipped a deployment-relevant result. Include when the math output has a clear business interpretation worth capturing for future reference.
+
 Journal lives in `JOURNAL.md` in the repo root. Source of truth for everything. Notion is just a scratchpad. Each commit message follows the pattern `Session NNN: <short description>`. Combined commits (e.g. `Sessions 010b + 011: ...`) are fine when sessions are tightly coupled, matching the 008+009 precedent.
 
 ### After-session debrief
@@ -113,6 +123,7 @@ He routinely asks **"don't include this in the file but tell me what we used, ho
 - For structured content (project pitches, tables of options, step-by-step instructions), bullets and tables are fine.
 - Math should use LaTeX inline (`$...$`) or display (`$$...$$`).
 - He has Claude Pro and Gemini Pro subscriptions and is comfortable with technical detail.
+- **Be concise by default.** Going long is a tool, not a default. Reserve depth for when he asks for it or when the conceptual ground genuinely needs it. (Self-correction noted end of Session 012 chat: Claude's longer answers there could have been tighter without quality loss.)
 
 ---
 
@@ -126,74 +137,15 @@ He routinely asks **"don't include this in the file but tell me what we used, ho
 - Short-term goal: Hong Kong PR after graduation
 - Long-term goals: support two future children's NYU tuition; own apartments in HK and Japan; eventually retire to renovated grandparents' house in Kochi
 - Has Claude Pro and Gemini Pro
-- **FWD Group internship** starts June 8, 2026 (~2.5 weeks away)
+- **FWD Group internship** starts June 8, 2026 (~2 weeks away as of Session 013 default start)
 - DASE2135 final exam done (May 11, 2026)
-- **Currently studying for the Google Cloud Associate Cloud Engineer (ACE) certification** — wants to connect every concept back to OptiLoc
+- **Currently studying for the Google Cloud Associate Cloud Engineer (ACE) certification** — wants to connect every concept back to OptiLoc. Has ~HKD 2,000 (~USD 255) in free GCP trial credit available.
 
 ---
 
-## The project in one diagram
+## The project at a glance
 
-```
-WorldPop 2020 GeoTIFF (constrained, UN-adjusted, downloaded from HDX)
-       │ rasterio + NumPy mask
-       ▼
-data/processed/demand_points.csv  (41,288 weighted points; total pop 7,496,988)
-       │
-       ├─ 02_render_demand_points.py → 01_first_map.html (heatmap)
-       │
-       ├─ 03_solve_weber.py → solver_results.csv
-       │       (Session 003: hand-rolled GD + Newton + BFGS;
-       │        all 3 agree to 8 decimals at lat 22.33729, lon 114.17071;
-       │        geographically in the Sham Shui Po / Shek Kip Mei area)
-       │
-       ├─ 03_solve_weber_multi.py → trails_multistart.csv
-       │       (Session 004: same math, 4 starting points)
-       │       │
-       │       └─ 04_visualize_convergence.py → 02_convergence_map.html
-       │
-       ├─ 05_solve_constrained.py → constrained_result.csv + kkt_multipliers.csv
-       │       (Session 005: SLSQP with 7 inequality constraints;
-       │        optimum jumps to OSM Kowloon polygon boundary at
-       │        Beacon Hill ridge, ~444m northeast of unconstrained)
-       │       │
-       │       └─ 06_visualize_constrained.py → 03_constrained_map.html
-       │
-       ├─ 07_condition_number.py  (Integration #1: Hessian analysis at 6 points)
-       │       No output file; prints analysis to terminal.
-       │
-       ├─ 08_solve_weber_weiszfeld.py → solver_comparison.csv + four_solver_trails.csv
-       │       (Session 008: Weiszfeld FONC-derived solver + 4-solver race;
-       │        all 4 agree to ~7.7e-9 degrees at Shek Kip Mei area)
-       │       │
-       │       └─ 09_visualize_four_solvers.py → 04_four_solvers_map.html
-       │              + four_solvers_wide.png + four_solvers_zoom.png
-       │
-       ├─ 10_fetch_ozp.py → data/processed/ozp_all_zones.geojson (119.8 MB, gitignored)
-       │       (Session 010: paginated ArcGIS REST fetch of all 11,963 OZP polygons)
-       │
-       ├─ 11_filter_and_union_ozp.py → ozp_commercial_union.geojson (1.27 MB)
-       │       (Filter to C + CDA; union 590 polygons into a 499-piece MultiPolygon)
-       │
-       ├─ 12_solve_constrained_ozp.py → ozp_constrained_result.csv
-       │       (Sessions 010 + 010b: SLSQP with the OZP commercial union as the
-       │        sole constraint; optimum at Shek Kip Mei (114.16944, 22.33321) on
-       │        a C-zoned polygon boundary; .buffer(1e-6) added in 010b gives
-       │        Exit mode 0 in 16 iters)
-       │       │
-       │       └─ 13_visualize_ozp_constrained.py → 05_ozp_constrained_map.html
-       │              + ozp_constrained_wide.png + ozp_constrained_zoom.png
-       │
-       ├─ 14_solve_kmedian.py → kmedian_result.csv + kmedian_trails.csv
-       │       (Session 011: Lloyd's algorithm + Weiszfeld inner solver, k=5,
-       │        10 weighted-random restarts; best obj 274,830 = 59.1% reduction
-       │        vs single-facility; multi-start found 4+ distinct local minima)
-       │       │
-       │       └─ 15_visualize_kmedian.py → 06_kmedian_map.html
-       │              + kmedian_map_wide.png + kmedian_map_zoom.png
-       │
-       └─ [next: Session 012 — k-sweep, k-commercial-hubs, or Phase 1d GCP]
-```
+OptiLoc's pipeline ingests the WorldPop population raster → derives 41,288 weighted demand points (total population 7,496,988) → solves variants of the Weber facility-location problem (unconstrained, OSM-Kowloon-polygon-constrained, OZP-commercial-constrained) → and k-median network variants (unconstrained, OZP-constrained) → visualizing each as an interactive Folium map. All scripts live in `notebooks/` (files 01–17) following the numbered ordering; each is described in the codebase reference below. Math reference (objectives, gradients, KKT, Weiszfeld, Lloyd) has moved to `docs/MATH.md` in the repo as of Session 012 — Claude can `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/MATH.md when math grounding is needed mid-session.
 
 ---
 
@@ -278,13 +230,7 @@ Three solvers, all vectorized NumPy: gradient descent (`alpha=1e-9, max_iter=10_
 
 **Purpose (Session 008):** Implements the Weiszfeld fixed-point iteration that Prof. Kuo flagged in his email — the FONC-derived solver missing from Session 003. Also re-runs all 4 solvers (Weiszfeld, Newton, BFGS, GD) from the same Victoria Harbour start and records trails.
 
-**Math:** Derived directly from FONC ($\nabla f = 0$) by algebraic rearrangement:
-
-$$x = \frac{\sum_i w_i x_i / d_i}{\sum_i w_i / d_i}, \quad d_i = \|x - x_i\|$$
-
-Iterating this fixed-point equation gives:
-
-$$\mathbf{x}^{(k+1)} = \frac{\sum_i (w_i / d_i^{(k)}) \mathbf{x}_i}{\sum_i w_i / d_i^{(k)}}$$
+**Math:** See `docs/MATH.md` (the Weiszfeld iteration section).
 
 **Output:** `data/processed/solver_comparison.csv` (4-row summary), `data/processed/four_solver_trails.csv` (292 trail positions across all 4 solvers).
 
@@ -295,7 +241,7 @@ $$\mathbf{x}^{(k+1)} = \frac{\sum_i (w_i / d_i^{(k)}) \mathbf{x}_i}{\sum_i w_i /
 - **GD:** 255 iterations, ~55ms
 - All four agree on the (Shek Kip Mei area) optimum to within $7.7 \times 10^{-9}$ degrees (sub-millimeter on the ground)
 
-**Key insight from Session 008:** Weiszfeld *ties* Newton on wall-clock despite Newton's quadratic convergence rate (4 iterations) vs Weiszfeld's linear rate (23 iterations). Reason: Time = iterations × per-iteration cost. Newton's per-iteration cost is ~6× Weiszfeld's because it computes and factorizes the 2×2 Hessian; Weiszfeld just does one weighted average. **On 2D Weber, the per-iteration cost gap cancels the asymptotic-rate advantage.** Linear convergence with cheap iterations beats quadratic with expensive iterations on small problems. **Session 011 reinforced this empirically across 1000 sub-solves with zero Weiszfeld failures.**
+**Key insight from Session 008:** Weiszfeld *ties* Newton on wall-clock despite Newton's quadratic convergence rate (4 iterations) vs Weiszfeld's linear rate (23 iterations). Reason: Time = iterations × per-iteration cost. Newton's per-iteration cost is ~6× Weiszfeld's because it computes and factorizes the 2×2 Hessian; Weiszfeld just does one weighted average. **On 2D Weber, the per-iteration cost gap cancels the asymptotic-rate advantage.** Linear convergence with cheap iterations beats quadratic with expensive iterations on small problems. **Sessions 011 and 012 reinforced this empirically across 1000+ sub-solves with zero Weiszfeld failures.**
 
 **Convergence criterion gotcha:** All four solvers in this file use **step-size convergence** ($\|x_{\text{new}} - x\| < \varepsilon$), not gradient-norm convergence. Newton originally hit max_iter=100 chasing floating-point noise in $\|\nabla f\|$ — switching to step-size made Newton report its real iteration count (4). Convergence criteria must be consistent across solvers for benchmarking to be honest.
 
@@ -329,7 +275,7 @@ These screenshots were attached to the email reply to Prof. Kuo.
 
 ### `notebooks/11_filter_and_union_ozp.py`
 
-**Purpose (Session 010):** Filter the cached OZP zones to Commercial (C) and Comprehensive Development Area (CDA) categories, union them into a single MultiPolygon, save as a small standalone GeoJSON used as the feasibility region for the constrained Weber solver.
+**Purpose (Session 010):** Filter the cached OZP zones to Commercial (C) and Comprehensive Development Area (CDA) categories, union them into a single MultiPolygon, save as a small standalone GeoJSON used as the feasibility region for the constrained Weber and k-median solvers.
 
 **Output:** `data/processed/ozp_commercial_union.geojson` (~1.27 MB, gitignored).
 
@@ -361,17 +307,13 @@ This rounds the 499 polygon corners and merges adjacent-polygon medial-axis kink
 - Shift from unconstrained: ~474 m southwest.
 - Convergence: Exit mode 0, 16 iterations, 44 function evaluations.
 
-**Session 010b also fixed two longstanding geographic mislabels** in the script's print block: "Mong Kok / Prince Edward" → "Sham Shui Po / Shek Kip Mei" (for the Session 003 reference) and "Kowloon historical boundary" → "Beacon Hill ridge (OSM Kowloon polygon)" (for the Session 005 reference). Both match the geographic findings documented in Session 010.
-
 ### `notebooks/13_visualize_ozp_constrained.py`
 
 **Purpose (Session 010):** The OZP-constrained comparison map. Renders the demand heatmap, the 499 C+CDA polygons as a translucent teal overlay, and three optima markers: unconstrained (gold star), Kowloon-polygon constrained (red dot), OZP-commercial constrained (purple star).
 
 **Output:** `docs/maps/05_ozp_constrained_map.html` + two committed screenshots:
-- `docs/maps/ozp_constrained_wide.png` (HK-wide view showing all 499 commercial polygons + heatmap + 3 markers clustered in Kowloon)
-- `docs/maps/ozp_constrained_zoom.png` (close-up showing the three markers between Sham Shui Po and Beacon Hill, with the purple star sitting cleanly on a teal commercial polygon at Shek Kip Mei)
-
-This map was the artifact that exposed the longstanding Mong Kok / Kowloon mislabels — the labeled street view made it immediately obvious that the optima are in the Sham Shui Po / Shek Kip Mei area, not Mong Kok, and that the OSM "Kowloon" polygon's boundary is at the Lion Rock ridge, not Boundary Street.
+- `docs/maps/ozp_constrained_wide.png`
+- `docs/maps/ozp_constrained_zoom.png`
 
 ### `notebooks/14_solve_kmedian.py`
 
@@ -392,20 +334,17 @@ This map was the artifact that exposed the longstanding Mong Kok / Kowloon misla
 
 **Empirical results (committed as fact):**
 - Best objective across 10 restarts: **274,830 weighted-units** — a **59.1% reduction** from the single-facility Weber baseline of 671,466 (Session 003).
-- Multi-start found **≥4 distinct local minima** from 10 random inits; **worst-best gap 9.3%** (300,393 vs 274,830). Restarts 6 and 9 tied for the best basin; restarts 1, 2, 3, 5, 10 found a 280,928 basin; restarts 4, 7, 8 found three other distinct local optima.
+- Multi-start found **≥4 distinct local minima** from 10 random inits; **worst-best gap 9.3%** (300,393 vs 274,830).
 - Best restart converged in 15 Lloyd iterations; all 10 restarts converged in 14–35 iters (none hit `max_lloyd_iters=50`).
-- Total runtime: **5.74s** for ~1000 Weber sub-solves (10 restarts × ~20 Lloyd iters × 5 Weiszfeld calls).
+- Total runtime: **5.74s** for ~1000 Weber sub-solves.
 - Final 5 facility locations (winning restart):
   - F1: (114.16958, 22.45553) — northern NT (Tai Po area)
-  - F2: (114.17428, 22.32082) — central Kowloon corridor
+  - F2: (114.17428, 22.32082) — central Kowloon
   - F3: (113.99662, 22.43110) — far western NT (Tuen Mun area)
   - F4: (114.11805, 22.36505) — NW NT (Tsuen Wan area)
   - F5: (114.23540, 22.30754) — eastern Kowloon (Kwun Tong area)
-- The 5 facilities span the territory sensibly: 2 in the dense Kowloon spine, 1 each in western/northern/eastern peripheries.
 
 **Key empirical finding — non-convexity is real and expensive:** 4+ distinct local minima from 10 random inits is empirical proof that the joint (facilities, assignments) problem is non-convex despite each sub-problem being convex. Multi-start isn't optional on k-median; a one-restart implementation would have shipped a 9% worse answer with no detection.
-
-**Why Weiszfeld earned its keep here:** 1000 Weber sub-solves all completed without failure. Newton's per-call speed advantage from Session 008 doesn't matter when even a 0.1% failure rate across this many calls would corrupt the multi-start budget. Linear convergence with cheap, reliable iterations beats quadratic convergence with occasional failures across many calls — exactly the reliability vs raw speed tradeoff Prof. Kuo flagged in his email.
 
 ### `notebooks/15_visualize_kmedian.py`
 
@@ -413,71 +352,56 @@ This map was the artifact that exposed the longstanding Mong Kok / Kowloon misla
 
 **Voronoi construction:** Uses `shapely.ops.voronoi_diagram` with an HK bounding-box envelope `Polygon([(113.80, 22.15), (114.50, 22.15), (114.50, 22.60), (113.80, 22.60)])` to produce 5 clipped Voronoi cells. **Gotcha:** the diagram's output order is implementation-defined and not guaranteed to match input order, so each output polygon is matched to its facility by a point-in-polygon containment test before rendering. Both `Polygon` and `MultiPolygon` cell types are handled (the latter can occur near the bounding-box clip edge).
 
-**Output:** `docs/maps/06_kmedian_map.html` plus two committed PNG screenshots:
-- `docs/maps/kmedian_map_wide.png` (HK-wide view; all 5 service areas + full heatmap visible)
-- `docs/maps/kmedian_map_zoom.png` (zoom on the dense Kowloon corridor where F2 and F4 sit closest together; shows the Voronoi boundary between them)
+**Output:** `docs/maps/06_kmedian_map.html` plus two committed PNG screenshots (`kmedian_map_wide.png`, `kmedian_map_zoom.png`).
 
-**Visual encoding:**
-- 5 distinct hex colors: purple `#7F77DD` (F1), teal `#1D9E75` (F2), coral `#D85A30` (F3), blue `#378ADD` (F4), amber `#BA7517` (F5)
-- Voronoi cells: translucent fills (`fill_opacity=0.18`) over the heatmap
-- Convergence trails: dashed polylines (`dash_array="6, 4"`) from random init to final position
-- Init markers: small hollow circles (radius=6)
-- Final facility markers: large filled circles with dark border (radius=13)
-- Title overlay + legend baked into HTML via `folium.Element`
+### `notebooks/16_solve_kmedian_ozp.py`
+
+**Purpose (Session 012):** OZP-constrained k-median network solver. The compositional session: combines Session 011's Lloyd outer loop with Session 010b's constrained Weber inner solver. Each per-cluster Weber sub-problem is now restricted to the buffered OZP commercial union $\Omega$.
+
+**Inner-solver strategy — conditional invocation:**
+1. Run unconstrained Weiszfeld on the cluster (cheap, ~7ms).
+2. Test `commercial_union.contains(Point(x_weiszfeld))`.
+3. If feasible, keep it. If infeasible, fall back to SLSQP warm-started from the Weiszfeld result.
+
+The conditional was designed to skip the expensive SLSQP call when the unconstrained Weiszfeld center naturally falls on commercial land. **Empirical reality (committed as fact): SLSQP fired on ~100% of Weiszfeld calls** because Kowloon is mostly residential by area; commercial sits in narrow corridors. The conditional logic was right by design (no harm done) but wrong by empirical prediction.
+
+**Hyperparameters:** Same as Session 011 (`K=5`, `N_RESTARTS=10`, `MAX_LLOYD_ITERS=50`, `RNG_SEED=42`) so results are directly comparable. Plus: `BUFFER=1e-6`, `SLSQP_MAXITER=200`, `SLSQP_FTOL=1e-8`.
+
+**Output:**
+- `data/processed/kmedian_ozp_result.csv` — 5 rows (final facility positions)
+- `data/processed/kmedian_ozp_trails.csv` — winning restart's per-iteration trail
+- `data/processed/kmedian_ozp_diagnostics.csv` — per-restart SLSQP-call counts, runtime, convergence flag
+
+**Empirical results (committed as fact):**
+- Best objective: **277,595 weighted-units** — only **+1.0% penalty** over Session 011's unconstrained 274,830.
+- Translated to ground distance: average HK resident is ~4.0 km from their nearest of 5 facilities (vs ~3.9 km unconstrained, ~9.6 km with one central facility). The OZP constraint costs the average resident about **40 meters** of extra travel.
+- Multi-start found **9 distinct local minima** from 10 random inits; worst-best gap **23.1%**. The constraint roughly *doubled* non-convexity vs Session 011 (4+ minima, 9.3% gap).
+- Total runtime: **107s** (~20× Session 011's 5.7s, due to ~100% SLSQP-fire rate).
+- 4/10 restarts hit `MAX_LLOYD_ITERS=50` without converging, including the winner. Restarts 6 and 9 both ended at obj ≈ 277,595 (4 sig fig agreement across two independent inits — the answer is robust despite non-convergence). Likely cause: assignment-vector oscillation around stable facility positions. Deferred fix.
+- Final 5 facility locations (winning restart, restart 9):
+  - F1: (114.17897, 22.46065) — northern NT (Tai Po area)
+  - F2: (114.11841, 22.36588) — Tsuen Wan / NW NT
+  - F3: (114.22888, 22.30993) — eastern Kowloon (Kwun Tong)
+  - F4: (114.00015, 22.43523) — Tuen Mun / western NT
+  - F5: (114.17211, 22.32086) — central Kowloon
+
+The five facilities are essentially in the same neighborhoods as Session 011's unconstrained answer, just snapped to the nearest commercial polygon boundary. HK's commercial zoning happens to be very well aligned with population distribution — that's what makes the +1% penalty so small.
+
+### `notebooks/17_visualize_kmedian_ozp.py`
+
+**Purpose (Session 012):** Folium map of the OZP-constrained k=5 k-median result with commercial-zone overlay, Voronoi service areas, dashed Lloyd trails, init + final facility markers.
+
+**Layer z-order (bottom to top):** CartoDB Positron base → demand heatmap → OZP commercial union (subtle beige overlay, `#D6B36A` at 22% opacity) → 5 Voronoi service areas (translucent facility colors, `fill_opacity=0.16`) → dashed Lloyd trails per facility → init markers (small hollow circles, radius=6) → final facility markers (large filled circles with dark border, radius=13) → title + legend HTML overlay.
+
+**Color scheme matched to Session 015** (purple/teal/coral/blue/amber) so the constrained and unconstrained maps can be visually cross-referenced.
+
+**Output:** `docs/maps/07_kmedian_ozp_map.html` plus two committed PNG screenshots (`kmedian_ozp_map_wide.png`, `kmedian_ozp_map_zoom.png`).
 
 ---
 
 ## The math, frozen for reference
 
-### Weber objective
-
-$$f(x, y) = \sum_{i=1}^{n} w_i \cdot d_i(x, y), \quad d_i = \sqrt{(x-x_i)^2 + (y-y_i)^2}$$
-
-### Gradient
-
-$$\nabla f(x, y) = \sum_{i=1}^{n} \frac{w_i}{d_i} \begin{pmatrix} x - x_i \\ y - y_i \end{pmatrix}$$
-
-### Hessian
-
-$$\nabla^2 f(x, y) = \sum_{i=1}^{n} \frac{w_i}{d_i^3} \begin{pmatrix} (y-y_i)^2 & -(x-x_i)(y-y_i) \\ -(x-x_i)(y-y_i) & (x-x_i)^2 \end{pmatrix}$$
-
-Convex (each term is rank-1 PSD; sum of PSD is PSD). Strict PD confirmed empirically in Integration #1.
-
-### Weiszfeld iteration (Session 008)
-
-Derived from FONC ($\nabla f = 0$) by algebraic rearrangement of the gradient equation. The fixed-point form:
-
-$$\mathbf{x}^{(k+1)} = \frac{\sum_i (w_i / d_i^{(k)}) \mathbf{x}_i}{\sum_i w_i / d_i^{(k)}}$$
-
-Each step is a weighted average of demand points using inverse-distance weights $u_i = w_i / d_i^{(k)}$. Closer points pull harder. No step size, no Hessian, no line search.
-
-### Lagrangian + KKT (Session 005)
-
-Standard form: $\min f(x)$ s.t. $g_j(x) \leq 0$.
-
-$$\mathcal{L}(x, \boldsymbol{\mu}) = f(x) + \sum_j \mu_j g_j(x)$$
-
-Four KKT conditions:
-1. Stationarity: $\nabla f + \sum_j \mu_j \nabla g_j = 0$
-2. Primal feasibility: $g_j(x^*) \leq 0$
-3. Dual feasibility: $\mu_j^* \geq 0$
-4. Complementary slackness: $\mu_j^* \cdot g_j(x^*) = 0$
-
-In Session 005: $\mu_1 > 0$ on Kowloon polygon (active), $\mu_2 = \mu_{3,\cdot} = 0$ on MTR and competitors (inactive).
-
-### k-median + Lloyd's algorithm (Session 011)
-
-**k-median objective:** find $k$ facility locations $F_1, \ldots, F_k \in \mathbb{R}^2$ and a demand-to-facility assignment $a \in \{1, \ldots, k\}^n$ to minimize total weighted travel:
-
-$$\min_{F_1,\ldots,F_k,\,a} \;\; \sum_{i=1}^{n} w_i \cdot \|x_i - F_{a_i}\|$$
-
-Non-convex in $(F, a)$ jointly (the discrete assignment makes it combinatorial: $k^n$ possible assignments). Lloyd's algorithm decomposes the problem into two convex sub-problems and alternates.
-
-**Assignment step:** $a_i = \arg\min_{j \in \{1, \ldots, k\}} \|x_i - F_j\|$ (vectorized argmin over the $n \times k$ distance matrix).
-
-**Update step (per cluster $C_j = \{i : a_i = j\}$):** $F_j^{(t+1)} = $ Weiszfeld solve on $\{(x_i, w_i) : i \in C_j\}$.
-
-Each step monotonically decreases the total objective. Convergence to a local minimum is guaranteed; the global minimum is not — hence multi-start with random inits. Empirically (Session 011, k=5, 10 weighted-random restarts): 4+ distinct local minima found, with 9.3% worst-best objective gap. **Multi-start is required, not optional.**
+Math reference (objectives, gradients, Hessian, Weiszfeld, KKT, k-median, Lloyd, constrained k-median) moved to **`docs/MATH.md`** in the repo as of Session 012. When math grounding is needed mid-session, `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/MATH.md (or just `view /mnt/project/docs/MATH.md` if added to Project knowledge, though intentionally not added there to keep CONTEXT.md token-efficient).
 
 ---
 
@@ -487,13 +411,15 @@ Each step monotonically decreases the total objective. Convergence to a local mi
 - **Environment:** `venv` at `.venv/`, activated via `.venv\Scripts\Activate.ps1` on Windows
 - **Package install:** `python -m pip install -r requirements.txt` (NOT `pip install` — Smart App Control blocks unsigned pip.exe)
 - **Numerical:** NumPy (vectorized math, ~1ms per gradient evaluation on 41k points), SciPy (BFGS reference, SLSQP for constrained)
-- **Geographic:** rasterio (raster I/O), osmnx (OSM fetching), shapely (polygon distance + union + `shapely.ops.voronoi_diagram` for Session 011's Voronoi service areas with envelope clipping), GeoPandas (vector I/O), `requests` (raw ArcGIS REST in Session 010 — no Esri SDK)
+- **Geographic:** rasterio (raster I/O), osmnx (OSM fetching), shapely (polygon distance + union + `shapely.ops.voronoi_diagram` for Voronoi service areas with envelope clipping), GeoPandas (vector I/O), `requests` (raw ArcGIS REST in Session 010 — no Esri SDK)
 - **Visualization:** Folium (interactive Leaflet maps), with custom HTML overlays for title/legend
 - **Tabular data:** pandas
 - **Version control:** Git, public GitHub repo at `github.com/Kaito-ishiguro/optiloc-hk`
 
-**Future-facing (planned, not yet integrated):**
-- **Cloud deployment target (GCP):** Cloud Run + Cloud Storage + Cloud Build + Artifact Registry + IAM, in region `asia-east2` (Hong Kong). This is the planned Phase 1d as Kaito's ACE study companion project. Architecture already sketched; not yet implemented. Session 010's "fetch upstream → cache → process from cache" topology is the local-laptop equivalent of the planned cloud architecture.
+**Planned for Phase 1d (Sessions 014–016):**
+- FastAPI (HTTP API wrapper around the solvers, with auto-generated Swagger docs at `/docs`)
+- Docker (containerize the solvers + FastAPI app)
+- GCP: Cloud Run (serverless container hosting in `asia-east2`), Cloud Storage (data assets), Cloud Build (CI from GitHub), Artifact Registry (container image storage), IAM (service accounts)
 
 ---
 
@@ -515,82 +441,47 @@ Kaito is on Windows 11 with PowerShell.
 
 ## Where we are right now (the immediate state)
 
-**Session 010b and Session 011 are shipped.** Phase 1c (multi-facility network optimization) is complete.
+**Session 012 is shipped.** Phase 1c+ (multi-facility network optimization, both unconstrained and OZP-constrained) is complete.
 
-The combined wrap-up commit on `main` carries:
-- `notebooks/12_solve_constrained_ozp.py` — updated with `.buffer(1e-6)` smoothness fix + two geographic label corrections in the print block
-- `notebooks/14_solve_kmedian.py` (new) — Lloyd's algorithm + Weiszfeld inner solver for k-median
-- `notebooks/15_visualize_kmedian.py` (new) — Voronoi map renderer for the k-median result
-- `docs/maps/kmedian_map_wide.png` + `docs/maps/kmedian_map_zoom.png` (new screenshots)
-- `JOURNAL.md` updated with Session 010b and Session 011 entries
-- `CONTEXT.md` updated with this state (i.e., this file)
+The Session 012 wrap-up commit (`8036089`) on `main` carries:
+- `notebooks/16_solve_kmedian_ozp.py` (new) — OZP-constrained k-median solver with conditional Weiszfeld→SLSQP inner solver
+- `notebooks/17_visualize_kmedian_ozp.py` (new) — Folium map renderer with commercial overlay
+- `docs/maps/kmedian_ozp_map_wide.png` + `docs/maps/kmedian_ozp_map_zoom.png` (new screenshots)
+- `JOURNAL.md` updated with Session 012 entry (includes the bonus "Real-world meaning of the output" section)
 
-**Headline Session 011 result:** best of 10 restarts gave objective 274,830 weighted-units — a 59.1% reduction from the single-facility Weber baseline of 671,466. The 5 facilities span HK from far western NT through central and eastern Kowloon. Multi-start found ≥4 distinct local minima from 10 random inits — empirical proof of non-convexity.
+A follow-up commit will carry this updated CONTEXT.md and a new `docs/MATH.md` (extracted from the old CONTEXT.md's math section).
 
-**Three follow-up directions for Session 012:**
+**Headline Session 012 result:** OZP-constrained k=5 k-median best objective 277,595 weighted-units — only **+1.0% penalty** over Session 011's unconstrained 274,830. Translated: restricting facilities to commercially-zoned land costs the average HK resident about 40 meters of extra travel. HK's commercial zoning happens to be very well aligned with population distribution; the constraint barely bites. The deeper finding: the 499-piece disconnected feasible region roughly *doubled* the multi-start non-convexity (9 distinct local minima, 23.1% worst-best gap vs Session 011's 4+ minima, 9.3% gap).
 
-### (a) Session 012 — k-sweep diminishing returns (~1 short session)
-
-The cheapest natural follow-up to Session 011. Solve k-median for k ∈ {3, 5, 8, 10}, plot objective vs k, see the diminishing-returns curve. Tests the "going from 1→5 cut 59%; what does 5→10 do?" intuition empirically.
-
-**Implementation:** wrap `14_solve_kmedian.py`'s main loop in an outer loop over k values, save a comparison CSV, plot objective vs k as a line chart. Maybe ~1 hour of work + 30 min write-up.
-
-### (b) Session 012 — k-commercial-hubs (~1-2 sessions)
-
-The more ambitious "real logistics network" framing. Combines Sessions 010 and 011: re-introduce the OZP commercial zoning constraint per-cluster, so each of the k facilities must land on commercially-zoned land. Each Lloyd update step becomes a constrained Weber sub-solve (SLSQP with the OZP commercial union as constraint) instead of unconstrained Weiszfeld.
-
-**Implementation considerations:** Weiszfeld-as-inner-solver becomes SLSQP-as-inner-solver — slower per call AND less reliable across many calls. With 10 restarts × ~15 Lloyd iters × 5 facilities = ~750 constrained sub-solves, even the buffer-smoothed SLSQP from Session 010b might struggle. **Mitigation:** only call SLSQP when the unconstrained Weiszfeld solution falls outside the feasible region (in dense Kowloon, most clusters' weighted centers will be on commercial land anyway). This conditional invocation keeps runtime reasonable.
-
-**Math-wise:** each Lloyd update becomes a KKT-constrained Weber sub-problem. Active set may differ per cluster. The story for Prof. Kuo writes itself: "the OR textbook framing of k-median with linear inequality constraints, applied to HK's 10.30 km² of commercial land."
-
-### (c) Phase 1d — GCP deployment (~3 sessions, ~7-10 hours)
-
-Kaito's ACE study companion project. Containerize the existing solvers as a FastAPI service, deploy to Cloud Run, set up Cloud Build → Artifact Registry pipeline. Architecture already sketched below in the "Phase 1d" section. Not urgent but timely — internship starts June 8, ACE cert study is active.
-
-**Build path:** Session A (Docker + FastAPI wrap), Session B (gcloud setup + first deploy), Session C (Cloud Build automation + custom domain). Each session lands a deployable milestone.
-
-**Recommended pick:** (a) is the right move for one short session before the internship starts. (b) is the right move if Kaito wants to send a follow-up to Prof. Kuo with a substantive new result. (c) is the right move if ACE cert urgency is high.
+**Session 013 candidates (see TL;DR for full list):** Default is **(a) k-sweep diminishing returns** over k ∈ {3, 5, 8, 10} on the OZP-constrained network. Alternatives are (b) oscillation fix, (c) Phase 1d Session A (Docker + FastAPI wrap — the GCP onramp), and (d) draft the Prof. Kuo follow-up email with the +1% finding.
 
 ---
 
-## Phase 1d — GCP deployment (queued, tied to ACE study)
+## Phase 1d — GCP deployment (queued, ACE-aligned)
 
-Kaito is studying for the Google Cloud Associate Cloud Engineer cert. The natural project: deploy OptiLoc as a public web service on GCP.
+Kaito is studying for the Google Cloud Associate Cloud Engineer cert and has ~HKD 2,000 (~USD 255) in free GCP trial credit. Phase 1d deploys OptiLoc as a public web service on GCP.
 
-**Architecture (sketched, not implemented):**
+**Architecture:** Cloud Build (CI from GitHub) → Artifact Registry (container image storage) → Cloud Run (FastAPI service in `asia-east2`) ← Cloud Storage (demand CSV + OZP GeoJSON assets). Naming: project `optiloc-hk`, bucket `optiloc-hk-data`, Cloud Run service `optiloc-solver`, Artifact Registry repo `optiloc-images`.
 
-```
-GitHub repo
-     │ (push to main)
-     ▼
-Cloud Build  ──►  Artifact Registry  (container image storage)
-                       │
-                       ▼ (deploy new revision)
-                  Cloud Run  ◄─►  Cloud Storage  (demand CSV, GeoJSON constraints)
-                       ▲
-                       │ (HTTP request)
-                  User browser  →  https://optiloc-xyz.run.app/solve?...
-```
+**End state:** public HTTPS URL like `https://optiloc-solver-xyz.asia-east2.run.app` serving the OptiLoc solvers as a FastAPI app with auto-generated Swagger docs at `/docs`. Visit URL → interactive API page → click endpoint, tweak parameters, see JSON response with facility positions. Optional Session-017 extension: minimal HTML frontend with a Folium-map response.
 
-**Naming convention:** project `optiloc-hk`, bucket `optiloc-hk-data`, Cloud Run service `optiloc-solver`, Artifact Registry repo `optiloc-images`, region `asia-east2`.
+**Cost reality:** essentially zero of the HKD 2,000 free trial gets consumed by OptiLoc. Cloud Run free tier (2M req/mo), Cloud Build (120 build-min/day), Artifact Registry (0.5 GB), Cloud Storage free tier all cover portfolio-scale usage. Leaves most of HKD 2,000 trial credit free for poking at other ACE-relevant services on the side (BigQuery, Cloud Functions, Pub/Sub).
 
-**Cost:** Free tier covers portfolio-scale traffic; ~$10/year for a custom domain.
+**Phasing (agreed end of Session 012 chat):**
 
-**Build path:** ~3 sessions (containerize → FastAPI wrapper → GCP deploy). Realistic 7–10 focused hours total.
+- **Session 014: Phase 1d Session A — Docker + FastAPI wrap.** ~2 hours. Containerize existing solvers, wrap in FastAPI with `/solve` endpoint, FastAPI auto-generates Swagger docs at `/docs`. Deliverable: portable Docker image. **No GCP knowledge needed yet.** This is the right "GCP onramp" because it teaches the application-side prep without depending on GCP being set up.
+- **Session 015: First GCP deploy.** ~1–2 hours, ACE-aligned (containers, IAM, regions, deployment). Push image to Artifact Registry, deploy Cloud Run service in `asia-east2`, get the live URL.
+- **Session 016: Cloud Build CI/CD from GitHub.** ~1–2 hours, ACE-aligned (CI/CD, IAM service accounts, Artifact Registry). Auto-build + auto-deploy on push to `main`.
 
-**Timing:** Best done summer/fall 2026 alongside ACE study; not urgent.
+Sessions 015–016 are timed for just before or during the first week of FWD internship — small focused chunks rather than a multi-session rush against the internship clock. Every concept maps directly to ACE exam topics so study and practice reinforce each other.
 
-**Session 010 made this easier.** The ArcGIS discovery + pagination + cache pattern from Session 010 is almost exactly the shape of a Cloud Function consumer: hit upstream → paginate → write to GCS → downstream consumers read from cache. The local `data/processed/ozp_all_zones.geojson` becomes `gs://optiloc-hk-data/raw/ozp_all_zones.geojson` in the cloud version.
+Session 010's ArcGIS discovery + pagination + cache pattern is the local-laptop equivalent of the planned Cloud Functions architecture: hit upstream → paginate → write to cache (will become a GCS bucket). The mental model already transfers.
 
 ---
 
 ## Phase 3 vision (long-term, for context only)
 
-If OptiLoc becomes commercial, the wedge is **logistics network optimization for Asian last-mile players** — Lalamove, SF Express, ZA Tech, HKTVmall, EV charging operators. NOT retail site selection (Placer.ai, $1.5B unicorn, would crush a solo founder there).
-
-The Asia wedge is real (no Placer-equivalent in HK/Singapore/Tokyo/Seoul/Bangkok). The math layer (Weber + KKT + k-median + Weiszfeld + realistic zoning constraints) is the moat for selling to ops directors who buy on math credibility, not data partnerships.
-
-Whether or not it becomes a company, the deeper goal is: keep building OptiLoc as Kaito learns more in class and through internships, until it's a tool he'd genuinely use for HK logistics decisions.
+If OptiLoc becomes commercial, the wedge is **logistics network optimization for Asian last-mile players** — Lalamove, SF Express, ZA Tech, HKTVmall, EV charging operators. NOT retail site selection (Placer.ai dominates that space). The Asia wedge is real (no Placer-equivalent in HK / Singapore / Tokyo / Seoul / Bangkok). The math layer (Weber + KKT + k-median + Weiszfeld + realistic zoning constraints) is the moat for selling to ops directors who buy on math credibility. Whether or not it becomes a company, the deeper goal is to keep building OptiLoc as Kaito learns more in class and through internships, until it's a tool he'd genuinely use for HK logistics decisions.
 
 ---
 
@@ -598,18 +489,19 @@ Whether or not it becomes a company, the deeper goal is: keep building OptiLoc a
 
 - **Session 001 — Project genesis.** Scoped the project, picked Weber facility location, decided on logistics pivot for Phase 3.
 - **Session 002 — WorldPop ingestion pipeline.** Set up Python env (with SAC fix), built the data pipeline, rendered 41k demand points.
-- **Session 003 — Hand-rolled solvers.** Derived gradient + Hessian by hand. Implemented GD + Newton + BFGS. Optimum at lat 22.33729, lon 114.17071 — *geographically in the Sham Shui Po / Shek Kip Mei area* (this was mislabeled as "Mong Kok / Prince Edward MTR" in earlier versions of CONTEXT.md; the coordinates put it ~1.5 km north of Prince Edward MTR, in the dense urban band that wraps northern Kowloon).
+- **Session 003 — Hand-rolled solvers.** Derived gradient + Hessian by hand. Implemented GD + Newton + BFGS. Optimum at lat 22.33729, lon 114.17071 — *geographically in the Sham Shui Po / Shek Kip Mei area* (mislabeled as "Mong Kok" in earlier versions of CONTEXT.md; corrected Session 010).
 - **Session 004 — Multi-start visualization.** 4 starting points × 2 methods. Added backtracking line search to Newton after singular-Hessian failure.
-- **Session 005 — KKT-constrained optimization.** Hand-derived Lagrangian + 4 KKT conditions. Signed-distance constraints. Constrained optimum at (114.17323, 22.34038) — on the boundary of the OSM "Kowloon" polygon, ~444 m **northeast** of the unconstrained answer, geographically at the Beacon Hill / Tai Wo Ping area. Empirical complementary slackness. *Geographic correction in Session 010:* the OSM "Kowloon" polygon's boundary is at the Lion Rock ridge, well north of Boundary Street; exact provenance still warrants re-investigation.
+- **Session 005 — KKT-constrained optimization.** Hand-derived Lagrangian + 4 KKT conditions. Signed-distance constraints. Constrained optimum at (114.17323, 22.34038) — on the boundary of the OSM "Kowloon" polygon, ~444 m **northeast** of unconstrained, at the Beacon Hill / Tai Wo Ping area. Empirical complementary slackness.
 - **Session 006 — README + Phase 1 shipped.** Polished README, screenshots, LinkedIn post draft.
-- **Session 007 / Integration #1 — Condition number analysis.** $\kappa$ ranges 1.24–3.25 across HK; Weber problem uniformly well-conditioned. Non-quadratic spatial variation in curvature is the real reason GD is slow, not high $\kappa$. Script committed as commit `6b2276c`, alongside Session 008+009.
+- **Session 007 / Integration #1 — Condition number analysis.** $\kappa$ ranges 1.24–3.25 across HK; Weber problem uniformly well-conditioned. Non-quadratic spatial variation in curvature is the real reason GD is slow, not high $\kappa$. Committed alongside Sessions 008+009.
 - **CONTEXT.md added** with chat-switch protocol baked in.
 - **Email from Prof. Kuo (between sessions).** Acknowledged the project, suggested ArcGIS and Weiszfeld, offered UG research collaboration.
-- **Session 008+009 — Weiszfeld + four-solver visualization (commit `0503794`).** Implemented Weiszfeld FONC-derived solver in ~10 lines. Built 4-solver comparison from same start; all converge to same optimum to $10^{-9}$ degrees. Key empirical finding: Weiszfeld ties Newton on wall-clock despite linear vs quadratic rate, because per-iteration cost dominates iteration count on this problem class. Built the four-color convergence map (`docs/maps/04_four_solvers_map.html`) with two committed PNG screenshots. Map was attached to the email reply to Prof. Kuo.
-- **Email reply to Prof. Kuo sent (start of Session 010 chat).** Four-solver results + commitment to ArcGIS/OZP integration as Session 010. Note: the email used the phrase "Mong Kok optimum" which is now visibly wrong on a labeled map; the truthful correction (if it ever comes up) is "Sham Shui Po / Shek Kip Mei — the NT pulls the centroid north of urban Kowloon."
-- **Session 010 — ArcGIS / OZP commercial zoning integration (commit `9d8a545`).** Discovered Esri China HK's public ArcGIS REST feature service via metadata-driven discovery (AGOL sharing API → service URL → layer schema → paginated query). Fetched all 11,963 OZP polygons, filtered to 590 C + CDA features, unioned into a 499-piece MultiPolygon totaling 10.30 km² (0.9% of HK's land area). Constrained Weber optimum at Shek Kip Mei (114.16944, 22.33321), on a C-zoned polygon boundary, ~474 m southwest of the unconstrained answer. SLSQP hit maxiter (Exit mode 9) due to non-smooth multi-polygon constraint Jacobian — result was correct to floating-point precision but lacked formal convergence stamp; deferred fix to Session 010b. The session also caught a longstanding geographic mislabel in CONTEXT.md — the optima from Sessions 003 and 005 were never in Mong Kok as documented; they're in the Sham Shui Po / Shek Kip Mei / Beacon Hill corridor. CONTEXT.md fixed in this wrap-up commit.
-- **Session 010b — SLSQP buffer-smoothness fix (combined commit with Session 011).** Added `.buffer(1e-6)` to OZP union in `12_solve_constrained_ozp.py` to smooth the 499-piece MultiPolygon's corner kinks at sub-millimeter scale. SLSQP now terminates with Exit mode 0 in 16 iterations (was Exit mode 9 / 200 iters). Same optimum to floating-point precision; `g_ozp(x*) ≈ -5.3e-11`. Also cleaned up two geographic mislabels in the script's print block (Mong Kok → Sham Shui Po; Kowloon historical boundary → Beacon Hill ridge). ~30 min.
-- **Session 011 — k-median network + Voronoi visualization (combined commit with 010b).** Implemented Lloyd's algorithm + Weiszfeld inner solver in `notebooks/14_solve_kmedian.py` (k=5, 10 weighted-random restarts, ~5.74s total). Best objective 274,830 = 59.1% reduction from single-facility baseline (671,466). Multi-start found ≥4 distinct local minima from 10 inits (9.3% worst-best gap) — empirical proof of non-convexity. Wrote `notebooks/15_visualize_kmedian.py` rendering Voronoi service areas (via `shapely.ops.voronoi_diagram`), dashed convergence trails, and facility markers as `docs/maps/06_kmedian_map.html` with two committed PNG screenshots. The 5 facilities span HK: F3 in Tuen Mun, F4 in Tsuen Wan, F1 in Tai Po, F2 in central Kowloon, F5 in Kwun Tong / eastern Kowloon — 2 in the dense spine, 1 in each peripheral region. **Phase 1c (multi-facility network optimization) shipped.** This session also validated the math-concept-tutor skill via the Lloyd's algorithm walkthrough.
+- **Session 008+009 — Weiszfeld + four-solver visualization (commit `0503794`).** Implemented Weiszfeld in ~10 lines. 4-solver comparison; all converge to same optimum to $10^{-9}$ degrees. Weiszfeld ties Newton on wall-clock despite linear vs quadratic rate (per-iter cost dominates iteration count on this problem class). Map attached to Prof. Kuo reply.
+- **Email reply to Prof. Kuo sent (start of Session 010 chat).** Four-solver results + commitment to ArcGIS/OZP integration. Note: the email used the phrase "Mong Kok optimum" which is now visibly wrong on a labeled map.
+- **Session 010 — ArcGIS / OZP commercial zoning integration (commit `9d8a545`).** Discovered Esri China HK's public ArcGIS REST service via metadata-driven discovery. Fetched all 11,963 OZP polygons, filtered to 590 C + CDA features, unioned into a 499-piece MultiPolygon totaling 10.30 km² (0.9% of HK's land area). Constrained Weber optimum at Shek Kip Mei (114.16944, 22.33321), ~474 m southwest of unconstrained. SLSQP hit maxiter (Exit mode 9) due to non-smooth multi-polygon constraint Jacobian; deferred fix to Session 010b. Also caught a longstanding geographic mislabel — the optima from Sessions 003 and 005 were never in Mong Kok; they're in Sham Shui Po / Shek Kip Mei / Beacon Hill.
+- **Session 010b — SLSQP buffer-smoothness fix (combined commit with Session 011).** Added `.buffer(1e-6)` to OZP union in `12_solve_constrained_ozp.py`. SLSQP now terminates with Exit mode 0 in 16 iterations. Same optimum to floating-point precision. ~30 min.
+- **Session 011 — k-median network + Voronoi visualization (combined commit with 010b).** Implemented Lloyd + Weiszfeld in `notebooks/14_solve_kmedian.py` (k=5, 10 weighted-random restarts, ~5.74s). Best obj 274,830 = 59.1% reduction from single-facility baseline. Multi-start found ≥4 distinct local minima from 10 inits (9.3% worst-best gap) — empirical proof of non-convexity. `notebooks/15_visualize_kmedian.py` renders Voronoi service areas, dashed convergence trails, facility markers. **Phase 1c (multi-facility network optimization) shipped.**
+- **Session 012 — Constrained k-median shipped (commit `8036089`).** Composition session: combined Session 010b's constrained Weber solver with Session 011's Lloyd outer loop. Built `notebooks/16_solve_kmedian_ozp.py` (conditional Weiszfeld→SLSQP inner solver) and `notebooks/17_visualize_kmedian_ozp.py` (commercial overlay + Voronoi map). Best objective 277,595 = **only +1.0% penalty** over unconstrained k=5 — restricting to commercially-zoned land costs the average HK resident ~40 meters of extra travel. The constraint roughly *doubled* non-convexity (9 distinct local minima vs ≥4; 23.1% worst-best gap vs 9.3%). Conditional invocation didn't save runtime as predicted — SLSQP fired on ~100% of Weiszfeld calls because Kowloon is mostly residential by area. 4/10 restarts hit `MAX_LLOYD_ITERS=50` without converging including the winner (restarts 6+9 both ended at obj ≈ 277,595 — robust despite non-convergence; assignment-oscillation hypothesis; deferred fix). Session also surfaced the real-world-interpretation workflow: 5 facilities = logistics network for HK; each is a delivery hub / EV station / retail location / government service center; +1% penalty is the headline business finding (legal commercial-zoned deployment is essentially free vs unconstrained ideal). **Phase 1c+ (constrained multi-facility network optimization) shipped.** This wrap-up commit also extracts the math reference to `docs/MATH.md` and applies the surgical CONTEXT.md trim agreed at end-of-Session-012 chat.
 
 ---
 
@@ -621,22 +513,24 @@ Whether or not it becomes a company, the deeper goal is: keep building OptiLoc a
 - **Terminal commands** → ONE step at a time, wait for "done" or error.
 - **New math concept** → use the math-concept-tutor skill at `/mnt/skills/user/math-concept-tutor/SKILL.md` (5-section format with real-world hook → visual → mechanics → vocab → connection).
 - **Empirical findings that contradict textbook predictions** → treat as the more interesting result.
-- **Optimizer non-convergence or surprising results** → don't smooth them over; visualize, diagnose, and document the failure mode. Sessions 010 (SLSQP maxiter) and 011 (multi-start finding 4+ local minima) both surfaced this way.
+- **Optimizer non-convergence or surprising results** → don't smooth them over; visualize, diagnose, and document the failure mode. Sessions 010 (SLSQP maxiter), 011 (multi-start finding 4+ local minima), and 012 (assignment oscillation + ~100% SLSQP-fire rate) all surfaced this way.
+- **Real-world deployment-relevant result shipped** → before wrapping, translate the math finding into deployment terms (avg km per resident, cost penalty in human units, business use cases). Add a "Real-world meaning of the output" section to the journal entry.
+- **Math grounding needed mid-session** → `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/MATH.md rather than trying to recall from memory.
 
 ---
 
 ## Files NOT in Git but referenced
 
 - `data/raw/hkg_ppp_2020_UNadj_constrained.tif` — WorldPop GeoTIFF, ~231KB, downloaded from HDX
-- `data/processed/*.csv` — all generated outputs (gitignored, regenerable). This includes `kmedian_result.csv` (5 rows) and `kmedian_trails.csv` (~80 rows) from Session 011.
+- `data/processed/*.csv` — all generated outputs (gitignored, regenerable). Includes `kmedian_result.csv` (5 rows), `kmedian_trails.csv` (~80 rows), `kmedian_ozp_result.csv` (5 rows), `kmedian_ozp_trails.csv` (~250 rows for restart 9's 50-iter trail), `kmedian_ozp_diagnostics.csv` (10 rows, one per restart).
 - `data/processed/ozp_all_zones.geojson` — ~120 MB cached ArcGIS response (gitignored, regenerable via `10_fetch_ozp.py`; would be rejected by GitHub's 100 MB push limit anyway)
 - `data/processed/ozp_commercial_union.geojson` — ~1.27 MB filtered + unioned constraint geometry (gitignored, regenerable via `11_filter_and_union_ozp.py`)
-- `docs/maps/*.html` — generated maps (gitignored, regenerable). This includes `06_kmedian_map.html` from Session 011.
+- `docs/maps/*.html` — generated maps (gitignored, regenerable). Includes `06_kmedian_map.html` (Session 011) and `07_kmedian_ozp_map.html` (Session 012).
 - `cache/*.json` — osmnx OpenStreetMap cache (gitignored, regenerable)
 - `.venv/` — Python virtual environment (gitignored)
 
-Files IN Git: README.md, JOURNAL.md, CONTEXT.md, requirements.txt, .gitignore, LICENSE, all `notebooks/*.py` (01–15), the nine committed screenshots in `docs/maps/*.png` (Session 005's two, Session 008+009's two, Session 010's two, Session 011's two, plus the original from Session 006), `data/raw/.gitkeep`, `data/processed/.gitkeep`.
+Files IN Git: README.md, JOURNAL.md, CONTEXT.md, **docs/MATH.md** (new in Session 012 wrap), requirements.txt, .gitignore, LICENSE, all `notebooks/*.py` (01–17), the eleven committed screenshots in `docs/maps/*.png` (Session 005's two, Session 006's one, Session 008+009's two, Session 010's two, Session 011's two, Session 012's two), `data/raw/.gitkeep`, `data/processed/.gitkeep`.
 
 ---
 
-*Last updated: end of Session 011 chat (May 21, 2026). Session 010b shipped the SLSQP buffer-smoothness fix; Session 011 shipped the multi-facility k-median solver + Voronoi visualization, completing Phase 1c (multi-facility network optimization). Both sessions were committed in a single combined commit, which also includes this updated CONTEXT.md. Update this file at the end of every session that meaningfully changes project state.*
+*Last updated: end of Session 012 chat (May 22, 2026). Session 012 shipped the OZP-constrained k-median network solver + visualization (+1.0% penalty headline; 9 distinct local minima from multi-start), completing Phase 1c+. This wrap-up commit also extracts math reference to `docs/MATH.md`, applies a surgical CONTEXT.md trim (ASCII tree removed, math externalized, Phase 1d rewritten with the new Sessions 014–016 GCP phasing, Phase 3 trimmed), and rephases Sessions 013–016 (k-sweep → Docker+FastAPI → GCP deploy → CI/CD). Update this file at the end of every session that meaningfully changes project state.*
