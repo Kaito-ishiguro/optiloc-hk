@@ -10,15 +10,15 @@ OptiLoc HK is a Hong Kong facility location optimizer being built by **Kaito Ish
 
 **https://github.com/Kaito-ishiguro/optiloc-hk**
 
-**Current phase:** Phase 1 complete plus nine technical extensions (Integration #1 condition-number analysis; Sessions 008+009 Weiszfeld + four-solver visualization; Session 010 ArcGIS/OZP zoning integration; Session 010b SLSQP buffer-smoothness fix; Session 011 multi-facility k-median + Voronoi visualization; Session 012 OZP-constrained k-median network; **Session 013 k-sweep diminishing returns + hub-location map gallery**). **Phase 1c+ (multi-facility network optimization, unconstrained and OZP-constrained) is shipped, plus a diminishing-returns analysis that materially strengthens the Phase 1 portfolio story.** Between Sessions 012 and 013, an inter-session strategic pivot happened: Kaito decided to build OptiLoc toward a real money-making project (consulting funnel → potential SaaS), not just a class portfolio piece. The canonical product/business plan is now **`docs/ROADMAP.md`** (commit `57b630d`). Companion to CONTEXT.md (technical handoff) and MATH.md (mathematical reference). The DASE2135 final exam was on May 11, 2026 (in the past). Prof. Kuo has emailed back acknowledging the project and offering UG research collaboration; the reply email with four-solver results was sent at the start of the Session 010 chat. **FWD Group internship starts June 8, 2026.** Kaito plans to maintain ~1-3 sessions/day through the internship (Claude credit usage is the practical limiter, not time). Kaito is studying for the **Google Cloud Associate Cloud Engineer (ACE) certification** and has ~HKD 2,000 (~USD 255) in free GCP trial credit.
+**Current phase:** Phase 1 complete plus ten technical extensions (Integration #1 condition-number analysis; Sessions 008+009 Weiszfeld + four-solver visualization; Session 010 ArcGIS/OZP zoning integration; Session 010b SLSQP buffer-smoothness fix; Session 011 multi-facility k-median + Voronoi visualization; Session 012 OZP-constrained k-median network; Session 013 k-sweep diminishing returns + hub-location map gallery; **Session 014 Dockerize + FastAPI wrapper**). Phase 1c+ (multi-facility network optimization, unconstrained and OZP-constrained) is shipped, plus a diminishing-returns analysis. **ROADMAP Phase 1 (GCP ship + portfolio asset) is now actively underway: Session 014 shipped the containerized API with full security hardening; Session 015 will deploy it to Cloud Run in `asia-east2`.** The canonical product/business plan is **`docs/ROADMAP.md`** (commit `57b630d`). Companion to CONTEXT.md (technical handoff) and MATH.md (mathematical reference). The DASE2135 final exam was on May 11, 2026 (in the past). Prof. Kuo has emailed back acknowledging the project and offering UG research collaboration; the reply email with four-solver results was sent at the start of the Session 010 chat. **FWD Group internship starts June 8, 2026.** Kaito plans to maintain ~1-3 sessions/day through the internship (Claude credit usage is the practical limiter, not time). Kaito is studying for the **Google Cloud Associate Cloud Engineer (ACE) certification** and has ~HKD 2,000 (~USD 255) in free GCP trial credit.
 
-**The immediate pending task at the start of this new chat: Session 014.**
+**The immediate pending task at the start of this new chat: Session 015.**
 
-Per `docs/ROADMAP.md` Phase 1, Session 014 = **Dockerize + FastAPI wrapper.** Write a `Dockerfile`, pin `requirements.txt` (full version-lock), wrap the solvers in a minimal FastAPI app exposing `/solve_weber`, `/solve_kmedian_ozp`, and `/healthz`. Build the image locally, run the container, hit the endpoints with sample request bodies via `curl` or `httpie`. ~2 hours. Blocking step before Session 015 (first Cloud Run deploy). Auto-generated Swagger docs at `/docs` become a "this is alive" artifact in cold-outreach DMs.
+Per `docs/ROADMAP.md` Phase 1, Session 015 = **first Cloud Run deploy.** Set up the GCP project (or confirm an existing one), enable the Artifact Registry + Cloud Run APIs, authenticate `gcloud`, create an Artifact Registry repo in `asia-east2`, tag and push the local `optiloc-hk:dev` image, then `gcloud run deploy` with the same security flags we validated in Session 014 (`--no-allow-unauthenticated=false` for public access; memory + CPU limits; concurrent-request cap; read-only filesystem). Final step: hit the Cloud Run URL's `/docs` from a browser to confirm Swagger renders on the open internet. This converts the DM artifact from "URL I can show you on my laptop" to "URL you can poke right now" — a step-change in Phase 1 narrative power.
 
-Session 014 is the next step in ROADMAP Phase 1: GCP shipped + portfolio asset. Sessions 015-018 follow: Cloud Run first deploy (015) → road-network distance integration (016, *math foundation #1*) → Cloud Build CI/CD (017) → landing page v1 (018). Detail in ROADMAP.
+Sessions 016-018 follow per ROADMAP Phase 1: road-network distance integration (016, *math foundation #1*, blocking before first paid pilot) → Cloud Build CI/CD (017) → landing page v1 (018). Detail in ROADMAP.
 
-Alternative directions considered and deprioritized: oscillation fix for the convergence-rate dropoff seen across Sessions 012-013 (change Lloyd's stop criterion from "assignment vector unchanged" to "max facility shift < ε" — would clean up the 5/10-converged-at-k=20 footnote); Prof. Kuo follow-up email (deferred until Phase 1 ships so the email can include the GCP URL).
+Alternative directions considered and deprioritized: oscillation fix for the convergence-rate dropoff seen across Sessions 012-013 (change Lloyd's stop criterion from "assignment vector unchanged" to "max facility shift < ε"); Prof. Kuo follow-up email (deferred until Phase 1 ships so the email can include the Cloud Run URL); shared `optiloc/` package refactor that would lazy-load geopandas in file 16 (deferred to Session 016 alongside road-network distance work — same surface area touched).
 
 ---
 
@@ -81,7 +81,7 @@ Counter-example to avoid: don't write a long "here's everything you need to do" 
 - He learns through **visual and interactive examples connecting math to real applications**.
 - He likes **full hand-derivations** (chain rule step by step) when learning new math.
 - When something fails (gradient descent overshoot, singular Hessian, Newton hitting max_iter from tolerance mismatch, SLSQP hitting maxiter on a non-smooth constraint, Lloyd hitting max-iters on assignment oscillation), **treat the failure as pedagogical**. He values seeing real failure modes more than getting clean answers on the first try.
-- He likes **honest engineering feedback over hype**. Tell him when an idea is harder than it looks. Tell him when his instincts are sharp (they often are). Tell him when your prior (the AI's) was wrong — Session 012 surfaced one such case (conditional-invocation runtime savings prediction was wrong); the inter-session strategic pivot surfaced another (the original B2B SaaS plan PDF he uploaded was generic AI-template work with several real errors, and Claude told him so directly).
+- He likes **honest engineering feedback over hype**. Tell him when an idea is harder than it looks. Tell him when his instincts are sharp (they often are). Tell him when your prior (the AI's) was wrong — Session 012 surfaced one such case (conditional-invocation runtime savings prediction was wrong); the inter-session strategic pivot surfaced another (the original B2B SaaS plan PDF he uploaded was generic AI-template work with several real errors, and Claude told him so directly); Session 014 surfaced a third (Claude's first cut of `api/requirements.txt` missed that file 16 imports geopandas at module level, and the lean dep list had to be widened).
 - **The math-concept-tutor skill** at `/mnt/skills/user/math-concept-tutor/SKILL.md` is the canonical format for any new math concept he asks about. It mandates: real-world hook → visual diagram → concept explanation → vocabulary → connection. Use it.
 - **Real-world interpretation matters as much as math.** When shipping a new result, briefly translate it into deployment terms (avg km per resident, cost penalty in human units, what business use cases this maps to). The math is the value; the interpretation is what makes it sellable.
 
@@ -125,6 +125,10 @@ He routinely asks **"don't include this in the file but tell me what we used, ho
 - **Be concise by default.** Going long is a tool, not a default. Reserve depth for when he asks for it or when the conceptual ground genuinely needs it.
 - **Claude credit is the practical limiter.** Kaito's credits run out fast. Token efficiency matters: don't restate context, don't pad responses, don't ask questions that could be answered from CONTEXT.md or ROADMAP.md.
 
+### Security posture
+
+When Kaito brings security questions or AI-generated security checklists, **the goal is proportional security, not maximal security**. Session 014 surfaced this clearly: a generic security checklist had us about to disable `/docs` in production, add API auth, and lock CORS to specific origins — all wrong for a Phase 1 portfolio asset whose entire purpose is to be a publicly-pokeable DM artifact. The right move was to keep the cheap-and-essential items (Pydantic input limits, rate limit, solver timeouts, sanitized errors, non-root user, read-only FS, `.dockerignore` allow-list) and skip the items wrong for this stage (auth, hidden docs, restrictive CORS, background queue, environment-loaded data when the data is public). Phase 2-3 will tighten as we add real customer data and money changes hands.
+
 ---
 
 ## About Kaito (load this into every new chat)
@@ -146,13 +150,68 @@ He routinely asks **"don't include this in the file but tell me what we used, ho
 
 ## The project at a glance
 
-OptiLoc's pipeline ingests the WorldPop population raster → derives 41,288 weighted demand points (total population 7,496,988) → solves variants of the Weber facility-location problem (unconstrained, OSM-Kowloon-polygon-constrained, OZP-commercial-constrained) → and k-median network variants (unconstrained, OZP-constrained, plus a full k-sweep over k ∈ {3, 5, 8, 10, 15, 20}) → visualizing each as an interactive Folium map or a static matplotlib gallery. All scripts live in `notebooks/` (files 01–20) following the numbered ordering; each is described in the codebase reference below. Math reference (objectives, gradients, KKT, Weiszfeld, Lloyd) lives in `docs/MATH.md`. Product/business plan lives in `docs/ROADMAP.md`. Claude can `web_fetch` either when needed mid-session.
+OptiLoc's pipeline ingests the WorldPop population raster → derives 41,288 weighted demand points (total population 7,496,988) → solves variants of the Weber facility-location problem (unconstrained, OSM-Kowloon-polygon-constrained, OZP-commercial-constrained) → and k-median network variants (unconstrained, OZP-constrained, plus a full k-sweep over k ∈ {3, 5, 8, 10, 15, 20}) → visualizing each as an interactive Folium map or a static matplotlib gallery. **As of Session 014, the solvers are also exposed over HTTP via a containerized FastAPI app (`api/` directory, `Dockerfile`).** All numbered scripts live in `notebooks/` (files 01–20); each is described in the codebase reference below. Math reference (objectives, gradients, KKT, Weiszfeld, Lloyd) lives in `docs/MATH.md`. Product/business plan lives in `docs/ROADMAP.md`. Claude can `web_fetch` either when needed mid-session.
 
 ---
 
 ## Codebase reference — file by file
 
-Every file in `notebooks/` and what it does. Use this as ground truth.
+Every file in `notebooks/`, plus the API + container layer added in Session 014, and what each does. Use this as ground truth.
+
+### API + container layer (Session 014)
+
+#### `api/__init__.py`
+
+Marks `api/` as a Python package and exposes `__version__ = "0.1.0"`. Imported by `api/main.py` for the FastAPI `version=` field.
+
+#### `api/config.py`
+
+Centralizes all paths, security limits, and solver defaults for the API. Includes:
+- Path resolution via `Path(__file__).resolve().parent.parent` (works both locally and inside the container).
+- DoS-prevention ceilings: `MAX_K=25`, `MAX_RESTARTS=20`.
+- `RATE_LIMIT_SOLVE = "5/minute"` (per-IP, applied to `/solve_*`).
+- Wall-clock timeouts: `WEBER_TIMEOUT_S=30`, `KMEDIAN_TIMEOUT_S=180`.
+- Solver defaults matching Session 012/013: `DEFAULT_K=5`, `DEFAULT_RESTARTS=10`, `BUFFER_DEG=1e-6`, `RNG_SEED=42`.
+
+#### `api/models.py`
+
+Pydantic v2 request/response schemas. Bounded inputs (`k`, `n_restarts` with `Field(ge=, le=)`) prevent pathological-value DoS. `WeberRequest` is empty for Session 014 (no caller-supplied params yet); Session 015+ will widen it. Response models include nested `Facility` and `RestartSummary` so the response is self-documenting in Swagger.
+
+#### `api/solvers.py`
+
+Loads `notebooks/08_solve_weber_weiszfeld.py` and `notebooks/16_solve_kmedian_ozp.py` as modules via `importlib.util.spec_from_file_location` (same pattern as Session 013's file 18 — needed because Python module names can't start with digits). Caches the loaded modules + demand points CSV + buffered OZP geometry at FastAPI startup via `initialize_solvers()`. Thin wrappers `solve_weber()` and `solve_kmedian_ozp(k, n_restarts)` are what the endpoints call — zero math duplication; notebooks remain source of truth.
+
+**Gotcha caught in Session 014:** file 16 imports `geopandas as gpd` at module level (for `gpd.read_file(OZP_GEOJSON)` inside `main()`). When the API imports file 16 via importlib, that top-level import fires, so the container needs `geopandas + pyogrio + pyproj` in its requirements file. Claude's first cut of `api/requirements.txt` missed this; widened on the second pass.
+
+#### `api/main.py`
+
+The FastAPI app. Exposes:
+- `GET /healthz` — liveness probe (used by Docker `HEALTHCHECK` and Cloud Run)
+- `POST /solve_weber` — Weiszfeld on baked-in HK demand
+- `POST /solve_kmedian_ozp` — k-median + OZP commercial constraint, with caller-tunable `k` and `n_restarts`
+- `GET /docs` — Swagger UI (kept public — this IS the DM artifact in Phase 1)
+- `GET /redoc` — ReDoc (also public)
+
+Security layer: slowapi rate limiter (`@limiter.limit(RATE_LIMIT_SOLVE)`), `asyncio.wait_for(asyncio.to_thread(...), timeout=...)` to enforce wall-clock solver timeouts, global `@app.exception_handler(Exception)` that returns `{"detail": "Internal server error.", "request_id": <uuid>}` so stack traces never leak to clients while still being grep-able server-side. CORS is `allow_origins=["*"]` (deliberate Phase 1 choice; Session 018 will lock to the landing-page origin).
+
+Lifespan startup runs `initialize_solvers()` once per process. Lifespan shutdown is a no-op (cleanup happens via process exit).
+
+#### `api/requirements.txt`
+
+Lean runtime dep list — only what the container needs:
+- `fastapi==0.136.1`, `uvicorn[standard]==0.47.0`, `slowapi==0.1.9`
+- `numpy==2.4.4`, `scipy==1.17.1`, `pandas==3.0.2`
+- `shapely==2.1.2`, `geopandas==1.1.3`, `pyogrio==0.12.1`, `pyproj==3.7.2`
+
+Explicitly excludes folium / matplotlib / osmnx / networkx / requests / rasterio / branca / xyzservices etc. — they're needed for the notebook dev work (in repo-root `requirements.txt`) but never at API runtime. This keeps the Docker image lean (~500 MB est., compared to ~700 MB if we shipped the full dev env).
+
+#### `Dockerfile`
+
+Single-stage build off `python:3.14-slim`. Creates a non-root `appuser`, installs deps in a separate layer (caches well across code edits), copies only what's needed (the two notebook solver files, the two data assets, the `api/` directory), `chown`s everything to `appuser`, runs as `appuser`, adds a `HEALTHCHECK` that hits `/healthz` via `urllib.request` every 30s, exposes 8000, and `CMD`s `uvicorn` with `sh -c` so `${PORT}` env var (injected by Cloud Run) expands at runtime. No apt-get / build-essential needed — `cp314` manylinux wheels exist for all 10 deps on Linux x86_64.
+
+#### `.dockerignore`
+
+Allow-list pattern for `data/processed/` (only `demand_points.csv` and `ozp_commercial_union.geojson` get into the build context, not the 120 MB `ozp_all_zones.geojson` cache). Also excludes `.git`, `.venv`, `__pycache__`, `docs/`, `cache/`, `README.md`, `JOURNAL.md`, `CONTEXT.md`, `requirements.txt` (dev requirements; the API uses its own), etc. Build context for the Session 014 build was 3.69 MB total.
 
 ### `notebooks/01_ingest_worldpop.py`
 
@@ -242,9 +301,11 @@ Three solvers, all vectorized NumPy: gradient descent (`alpha=1e-9, max_iter=10_
 - **GD:** 255 iterations, ~55ms
 - All four agree on the (Shek Kip Mei area) optimum to within $7.7 \times 10^{-9}$ degrees (sub-millimeter on the ground)
 
-**Key insight from Session 008:** Weiszfeld *ties* Newton on wall-clock despite Newton's quadratic convergence rate (4 iterations) vs Weiszfeld's linear rate (23 iterations). Reason: Time = iterations × per-iteration cost. Newton's per-iteration cost is ~6× Weiszfeld's because it computes and factorizes the 2×2 Hessian; Weiszfeld just does one weighted average. **On 2D Weber, the per-iteration cost gap cancels the asymptotic-rate advantage.** Linear convergence with cheap iterations beats quadratic with expensive iterations on small problems. **Sessions 011, 012, and 013 reinforced this empirically across thousands of sub-solves with zero Weiszfeld failures.**
+**Key insight from Session 008:** Weiszfeld *ties* Newton on wall-clock despite Newton's quadratic convergence rate (4 iterations) vs Weiszfeld's linear rate (23 iterations). Reason: Time = iterations × per-iteration cost. Newton's per-iteration cost is ~6× Weiszfeld's because it computes and factorizes the 2×2 Hessian; Weiszfeld just does one weighted average. **On 2D Weber, the per-iteration cost gap cancels the asymptotic-rate advantage.** Linear convergence with cheap iterations beats quadratic with expensive iterations on small problems. **Sessions 011, 012, 013, and 014 reinforced this empirically across thousands of sub-solves with zero Weiszfeld failures.**
 
 **Convergence criterion gotcha:** All four solvers in this file use **step-size convergence** ($\|x_{\text{new}} - x\| < \varepsilon$), not gradient-norm convergence. Newton originally hit max_iter=100 chasing floating-point noise in $\|\nabla f\|$ — switching to step-size made Newton report its real iteration count (4). Convergence criteria must be consistent across solvers for benchmarking to be honest.
+
+**Imported by the API as of Session 014:** `api/solvers.py` loads this file via `importlib.util` and calls `weiszfeld(points, weights, x0)` and `objective(x, points, weights)` directly. Function signatures are now part of the API contract; changes to them would need coordinated updates in `api/solvers.py`.
 
 ### `notebooks/09_visualize_four_solvers.py`
 
@@ -268,7 +329,7 @@ These screenshots were attached to the email reply to Prof. Kuo.
 
 **Service endpoint discovered via metadata-driven lookup:** `https://services3.arcgis.com/6j1KwZfY2fZrfNMR/arcgis/rest/services/ZONE/FeatureServer/0`. The discovery pattern: AGOL item ID → sharing API → service URL → service metadata → layer fields → paginated query. This is the same metadata-discovery pattern used in GCP Service Discovery / API Gateway routing.
 
-**Output:** `data/processed/ozp_all_zones.geojson` (~120 MB, gitignored). Each feature carries `OBJECTID`, `PLAN_NO`, `ZONE_LABEL`, `DESC_ENG`, `SPUSE_ENG` attributes plus polygon geometry.
+**Output:** `data/processed/ozp_all_zones.geojson` (~120 MB, gitignored; also excluded from Docker build context via `.dockerignore` allow-list).
 
 **Pagination strategy:** `resultOffset` + `resultRecordCount=2000` (the service's `maxRecordCount`), `orderByFields=OBJECTID` for stable ordering, 60s `timeout`. Six pages total. **Operational warning:** the last page took exactly 60s on the only run we've done, dangerously close to the timeout. Any production / scheduled-job version of this script should use a 120s timeout and add exponential-backoff retry.
 
@@ -278,7 +339,7 @@ These screenshots were attached to the email reply to Prof. Kuo.
 
 **Purpose (Session 010):** Filter the cached OZP zones to Commercial (C) and Comprehensive Development Area (CDA) categories, union them into a single MultiPolygon, save as a small standalone GeoJSON used as the feasibility region for the constrained Weber and k-median solvers.
 
-**Output:** `data/processed/ozp_commercial_union.geojson` (~1.27 MB, gitignored).
+**Output:** `data/processed/ozp_commercial_union.geojson` (~1.27 MB, gitignored locally but **baked into the Docker image as of Session 014**).
 
 **Filter logic — the "C-prefix trap":** `ZONE_LABEL` has 157 distinct values, and several start with "C" but are not commercial-eligible: `CA` (Conservation Area), `CP` (Country Park), `CPA` (Coastal Protection Area), `C/R` (mixed Commercial/Residential). The filter explicitly disambiguates: accept only exact `C`/`CDA` or labels matching `C(N)` / `CDA(N)`. The parenthesis pattern (commercial sub-zones) cleanly separates the desired categories from the false-positive C-prefixes.
 
@@ -363,6 +424,8 @@ This rounds the 499 polygon corners and merges adjacent-polygon medial-axis kink
 - 4/10 restarts hit `MAX_LLOYD_ITERS=50` without converging, including the winner. Likely cause: assignment-vector oscillation around stable facility positions. Deferred fix.
 - HK's commercial zoning is well-aligned with population distribution → +1% penalty is small.
 
+**Imported by the API as of Session 014:** `api/solvers.py` loads this file via `importlib.util` and calls `lloyd_one_restart(demand, weights, feasible_geom, k, rng, restart_id)` directly. **Key gotcha:** file 16 has `import geopandas as gpd` at module level (used only inside `main()` for the geojson load). Importing file 16 via importlib triggers that top-level import, so the Docker image must include geopandas + pyogrio + pyproj even though the `lloyd_one_restart` function itself doesn't use them. Deferred refactor (lazy-load geopandas inside `main()`) was noted for Session 016 alongside the road-network-distance work.
+
 ### `notebooks/17_visualize_kmedian_ozp.py`
 
 **Purpose (Session 012):** Folium map of the OZP-constrained k=5 k-median result with commercial-zone overlay, Voronoi service areas, dashed Lloyd trails, init + final facility markers.
@@ -375,7 +438,7 @@ This rounds the 499 polygon corners and merges adjacent-polygon medial-axis kink
 
 **Purpose (Session 013):** k-sweep diminishing-returns solver. Wraps Session 012's `lloyd_one_restart` (from `notebooks/16_solve_kmedian_ozp.py`) in an outer k-loop, sweeping k ∈ {3, 5, 8, 10, 15, 20} with `N_RESTARTS=10` each.
 
-**Import mechanic:** Python module names can't start with a digit, so `import notebooks.16_solve_kmedian_ozp` doesn't work. The script uses `importlib.util.spec_from_file_location` to load file 16 as a module, then calls `sess12.lloyd_one_restart(...)` directly — zero math duplication, single source of truth for the Lloyd + Weiszfeld + SLSQP machinery. This pattern is reusable for any future cross-file reuse of numbered scripts.
+**Import mechanic:** Python module names can't start with a digit, so `import notebooks.16_solve_kmedian_ozp` doesn't work. The script uses `importlib.util.spec_from_file_location` to load file 16 as a module, then calls `sess12.lloyd_one_restart(...)` directly — zero math duplication, single source of truth for the Lloyd + Weiszfeld + SLSQP machinery. **This pattern is reused by `api/solvers.py` in Session 014.**
 
 **Reproducibility design:** Fresh `np.random.default_rng(RNG_SEED=42)` per k value. This means the k=5 run inside the sweep exactly reproduces Session 012's 277,595 — a baked-in sanity check that passed on first attempt. Crash-safe: all three summary CSVs are rewritten after each k completes, so a late crash preserves earlier k results on disk.
 
@@ -393,6 +456,8 @@ This rounds the 499 polygon corners and merges adjacent-polygon medial-axis kink
 | 20 | 113,868  | 83.0%         | 40.1%          | 5/10      |
 
 Total sweep runtime: **6.3 min** (faster than the 20-min initial estimate). Marginal gain per added facility drops from ~8pp/facility (3→5) to ~0.6pp/facility (15→20). **Elbow at k ≈ 8–10.** Convergence rate drops sharply at k=20 (5/10) — Session 012's oscillation issue amplifies with k.
+
+**Session 014 reproducibility check:** The API's `/solve_kmedian_ozp` endpoint with `k=3, n_restarts=2` returned `best_objective=384,054.11420394183` — exact match to this table's k=3 entry. The importlib-based wrapping preserves bit-for-bit numerical equivalence.
 
 ### `notebooks/19_visualize_ksweep.py`
 
@@ -430,20 +495,20 @@ Product and business roadmap is in **`docs/ROADMAP.md`** (shipped at commit `57b
 
 ## Tech stack
 
-- **Language:** Python 3
+- **Language:** Python 3.14 (he upgraded between Sessions 013 and 014; `cp314` wheels exist on both Windows and Linux for all our deps)
 - **Environment:** `venv` at `.venv/`, activated via `.venv\Scripts\Activate.ps1` on Windows
 - **Package install:** `python -m pip install -r requirements.txt` (NOT `pip install` — Smart App Control blocks unsigned pip.exe)
 - **Numerical:** NumPy (vectorized math, ~1ms per gradient evaluation on 41k points), SciPy (BFGS reference, SLSQP for constrained)
 - **Geographic:** rasterio (raster I/O), osmnx (OSM fetching), shapely (polygon distance + union + `shapely.ops.voronoi_diagram` for Voronoi service areas with envelope clipping), GeoPandas (vector I/O), `requests` (raw ArcGIS REST in Session 010 — no Esri SDK)
 - **Visualization:** Folium (interactive Leaflet maps) for HTML outputs; matplotlib (multi-panel static galleries with hexbin density backgrounds, GeoDataFrame overlays, and Voronoi cell fills) for landing-page PNGs
 - **Tabular data:** pandas
-- **Module reuse:** `importlib.util.spec_from_file_location` for loading numbered scripts (file 18 reuses file 16's solver this way)
+- **Module reuse:** `importlib.util.spec_from_file_location` for loading numbered scripts (file 18 reuses file 16's solver this way; **`api/solvers.py` reuses files 08 + 16 this way as of Session 014**)
+- **HTTP API (Session 014):** FastAPI 0.136.1 + Uvicorn 0.47.0 + Pydantic 2.13.4 + slowapi 0.1.9. Async endpoints use `asyncio.to_thread()` + `asyncio.wait_for()` to wrap synchronous solvers with wall-clock timeouts. CORS open via `fastapi.middleware.cors`. Global `@app.exception_handler(Exception)` for sanitized error responses with `request_id`.
+- **Containerization (Session 014):** Docker Desktop 4.67.0 (Engine 29.3.1) on Windows with WSL2 backend producing linux/amd64 images. `python:3.14-slim` base, single-stage build, non-root user, `--read-only` + `--tmpfs /tmp:rw,size=64m` at runtime, `HEALTHCHECK` via Python's `urllib.request`.
 - **Version control:** Git, public GitHub repo at `github.com/Kaito-ishiguro/optiloc-hk`
 
-**Planned for ROADMAP Phase 1 (Sessions 014–018):**
-- FastAPI (HTTP API wrapper around the solvers, with auto-generated Swagger docs at `/docs`)
-- Docker (containerize the solvers + FastAPI app)
-- GCP: Cloud Run (serverless container hosting in `asia-east2`), Cloud Storage (data assets), Cloud Build (CI from GitHub), Artifact Registry (container image storage), IAM (service accounts)
+**Planned for ROADMAP Phase 1 (Sessions 015–018):**
+- GCP: Cloud Run (serverless container hosting in `asia-east2`), Cloud Storage (data assets), Cloud Build (CI from GitHub), Artifact Registry (container image storage), IAM (service accounts) — Session 015 onward
 - OSRM (self-hosted on Cloud Run) or Google Distance Matrix API — for road-network distance (Session 016, *math foundation #1* per ROADMAP)
 
 ---
@@ -453,7 +518,7 @@ Product and business roadmap is in **`docs/ROADMAP.md`** (shipped at commit `57b
 Kaito is on Windows 11 with PowerShell.
 
 - **Smart App Control was disabled** in Session 002 to allow pandas/rasterio C extensions to load.
-- **PowerShell `mkdir -p` doesn't work.** Use comma-separated args.
+- **PowerShell `mkdir -p` doesn't work.** Use comma-separated args or `New-Item -ItemType Directory -Force`.
 - **`pip` direct calls can be blocked by SAC.** Always use `python -m pip install ...`
 - **`Move-Item` with `-Force`** is needed if the destination file exists.
 - **Git on Windows complains about LF→CRLF line endings.** Harmless; ignore.
@@ -461,26 +526,31 @@ Kaito is on Windows 11 with PowerShell.
 - **Activate venv first** in every new PowerShell session: `cd "C:\Users\Kaito Ishiguro\Documents\optiloc-hk"` then `.venv\Scripts\Activate.ps1`. Look for `(.venv)` in the prompt.
 - **Snipping Tool** (`Win+Shift+S`) for screenshots, paste into Paint, save as PNG into `docs/maps/`.
 - **For PowerShell one-liner Python with `requests`:** `python -c "import requests; ..."` works fine; double quotes on the outside, single quotes inside the JSON params dict. Don't use multi-line `-c` strings; PowerShell mangles them.
+- **PowerShell here-strings** (`@' ... '@`) require the closing `'@` to be at column 0 (no leading whitespace) or PowerShell errors. Single-quoted here-strings don't interpolate `$VARS` or `${VARS}` — safe for Dockerfile and Python content. Used throughout Session 014 for file writes.
+- **`Invoke-RestMethod`** is the right tool for hitting HTTP endpoints from PowerShell, NOT `curl` (which is an alias for `Invoke-WebRequest` and behaves differently). For POST with JSON body: `Invoke-RestMethod -Method Post -ContentType "application/json" -Body '{"k":3}' http://...`
+- **Docker Desktop on Windows** runs Linux containers via WSL2. The local image platform is `linux/amd64`, matching Cloud Run. Daemon must be running (whale icon in system tray) before `docker build` / `docker run`.
 
 ---
 
 ## Where we are right now (the immediate state)
 
-**Session 013 is shipped** (commit `0c7e830`). Two landing-page-ready artifacts now exist:
-- `docs/maps/08_ksweep_diminishing_returns.png` — the headline diminishing-returns chart ("how many hubs is enough for HK?")
-- `docs/maps/09_ksweep_hub_locations.png` — the 2×3 hub-location gallery ("and where, at each candidate scale?")
+**Session 014 is shipped.** The OptiLoc solvers now run inside a Docker container as a FastAPI HTTP service. Local validation passed (uvicorn + curl from a second PowerShell window) and container validation passed (docker run with `--read-only --tmpfs /tmp:rw,size=64m` + `Invoke-RestMethod`). All three endpoints reproduce notebook results exactly:
+- `/healthz` → `{"status": "ok", "version": "0.1.0"}`
+- `/solve_weber` → lon=114.17071, lat=22.33729, iterations=23 (matches Session 008)
+- `/solve_kmedian_ozp` with `k=3, n_restarts=2` → best_objective=384,054.114 (exact match to Session 013's k=3 row)
 
-The Phase 1 portfolio asset story is materially stronger than at the start of Session 013. The two charts together answer both the quantitative trade-off (k vs total coverage) and the spatial question (where do the hubs land at each k).
+**Security hardening verified working in a real container:** Pydantic-bounded inputs, slowapi rate limit (5/min/IP), `asyncio.wait_for` solver timeouts (30s Weber, 180s k-median), global exception handler with sanitized 500 + request_id, non-root `appuser`, read-only root FS, 64MB tmpfs `/tmp`, `HEALTHCHECK` firing every 30s from inside the container. The Swagger `/docs` is deliberately public — it's the DM artifact.
 
-**Empirical findings worth keeping front-of-mind for customer-discovery framing:**
-- Elbow at k ≈ 8–10 — past that, marginal hub buys progressively less coverage.
-- Marginal hubs at high k concentrate in urban density, not in underserved sparse areas. Total-weighted-distance objectives serve utilization-chasing customers, not equity-chasing customers.
-- Multi-start variance doubles between k=5 (23%) and k=20 (40%) — non-convexity is real and grows fast with k.
-- Lloyd convergence-rate drops to 5/10 at k=20 — Session 012's oscillation issue amplifies. Candidate fix (deferred): change stop criterion from "assignment unchanged" to "max facility shift < ε."
+**Image size note:** Total build time was 248s (3.7 min in pip install for the heavy scipy/pandas/geopandas wheels, ~30s in setup + layer export). Build context just 3.69 MB thanks to `.dockerignore` allow-list pattern. No apt-get / build-essential needed — `cp314` manylinux wheels existed for every dep on Linux x86_64.
 
-**Next up: Session 014 — Dockerize + FastAPI wrapper.** Write `Dockerfile`, pin `requirements.txt`, build a minimal FastAPI app exposing `/solve_weber`, `/solve_kmedian_ozp`, and `/healthz`. Hit endpoints locally with `curl` or `httpie`. Blocking step before Session 015 (first Cloud Run deploy). Auto-generated Swagger docs at `/docs` are the "this is alive" artifact in cold-outreach DMs.
+**Empirical findings worth keeping front-of-mind for Session 015:**
+- The container is configured to read `PORT` from env (Cloud Run injects this; defaults to 8000 locally). `uvicorn --host 0.0.0.0 --port ${PORT}` via `sh -c` in CMD handles substitution.
+- The two baked-in data assets total ~1.3 MB (demand_points.csv ~1 MB + ozp_commercial_union.geojson 1.27 MB). Trivial for Cloud Run; no need to externalize to Cloud Storage yet.
+- Cold-start expectation for Cloud Run: ~5-10s including pip-installed-package import overhead + lifespan startup (loading the OZP geojson). To be measured in Session 015.
 
-Subsequent ROADMAP Phase 1 sessions: 015 Cloud Run → 016 road-network distance (math foundation #1, blocking before first paid pilot) → 017 CI/CD via Cloud Build → 018 landing page v1. Detail in ROADMAP.
+**Next up: Session 015 — first Cloud Run deploy.** Concrete steps: set up GCP project (or confirm existing), enable Artifact Registry + Cloud Run APIs, `gcloud auth login` + `gcloud auth configure-docker`, create Artifact Registry repo in `asia-east2`, tag `optiloc-hk:dev` → push, then `gcloud run deploy optiloc-api --image=... --region=asia-east2 --allow-unauthenticated --memory=1Gi --cpu=1 --concurrency=10 --max-instances=3 --read-only`. Final: hit the auto-generated `*.a.run.app` URL's `/docs` from a browser and confirm Swagger renders on the open internet. Estimated time: 1-2 hours, mostly waiting on GCP API enablement and the first push.
+
+Subsequent ROADMAP Phase 1 sessions: 016 road-network distance integration (math foundation #1; also where we'll do the file-16 geopandas-lazy-load refactor) → 017 CI/CD via Cloud Build → 018 landing page v1.
 
 ---
 
@@ -503,6 +573,7 @@ Subsequent ROADMAP Phase 1 sessions: 015 Cloud Run → 016 road-network distance
 - **Session 012 — Constrained k-median shipped (commit `8036089`).** Composition session. Best obj 277,595 = +1.0% penalty over unconstrained k=5. Constraint roughly *doubled* non-convexity (9 distinct local minima vs ≥4). Conditional invocation didn't save runtime as predicted (SLSQP fired ~100% of the time). **Phase 1c+ shipped.** Wrap-up also extracted math reference to `docs/MATH.md`.
 - **Inter-session — 2026-05-22 — Strategic pivot & roadmap (commit `57b630d`).** Tore down the AI-drafted "OptiLoc B2B SaaS Business Plan" PDF Kaito uploaded; rebuilt as realistic 5-phase roadmap. Decided HK-only, EV charging as default vertical (flexible), math foundations non-skippable, hybrid open source, step-based not date-based. Primary goal of the build clarified: gain repeatable pitching/presenting experience with operational decision-makers; revenue is downstream. Shipped `docs/ROADMAP.md` as canonical product/business reference.
 - **Session 013 — 2026-05-22 — k-sweep diminishing returns + hub-location maps (commit `0c7e830`).** Three files shipped: 18 (k-sweep solver wrapping file 16 via `importlib.util`), 19 (two-panel diminishing-returns chart with multi-start band + convergence-rate annotations), 20 (2×3 hub-location map gallery with weighted-hexbin background + OZP overlay + Voronoi cells). 6.3-min sweep over k ∈ {3, 5, 8, 10, 15, 20}, 10 restarts each, fresh RNG per k. k=5 reproduces Session 012's 277,595 exactly. **Elbow at k ≈ 8–10.** Spatial finding: marginal hubs at high k cluster in urban density, not in underserved sparse areas — total-weighted-distance objectives concentrate where population is concentrated. Different customer profiles will need different objective functions. Convergence-rate dropoff at k=20 (5/10) noted, fix deferred.
+- **Session 014 — 2026-05-23 — FastAPI + Docker ship.** Eight new files: `api/__init__.py`, `api/config.py`, `api/models.py`, `api/solvers.py`, `api/main.py`, `api/requirements.txt`, `.dockerignore`, `Dockerfile`. FastAPI app exposes `/healthz` + `/solve_weber` + `/solve_kmedian_ozp` + `/docs` Swagger. Importlib reuse of files 08 + 16 (zero math duplication). Security: Pydantic-bounded inputs, slowapi rate limit, asyncio solver timeouts, sanitized errors, non-root container user, read-only root FS, 64MB tmpfs `/tmp`, HEALTHCHECK. Docker image (`optiloc-hk:dev`) built in 4 min, build context 3.69 MB. Reproducibility verified inside container: Weber returns Session 008's 23-iter optimum; k=3 k-median returns Session 013's 384,054 exactly. **Key insight: security posture should be proportional to deployment stage, not maximal.** Disabled-`/docs` and API-auth items from the generic security checklist were skipped as wrong for a Phase 1 DM artifact; kept the cheap-and-essential items. **ROADMAP Phase 1 first step shipped.**
 
 ---
 
@@ -519,6 +590,7 @@ Subsequent ROADMAP Phase 1 sessions: 015 Cloud Run → 016 road-network distance
 - **Math grounding needed mid-session** → `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/MATH.md
 - **Business/product grounding needed mid-session** (pricing, vertical, customer discovery timing, phase scope, anti-roadmap) → `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/ROADMAP.md
 - **Kaito ready to do customer outreach** → per ROADMAP Phase 2, draft personalized DM script for the persona. He's willing to send DMs anytime; tell him when.
+- **Security checklist or security question** → see "Security posture" under "How to work with Kaito". Goal is proportional security, not maximal. Cut items wrong for the current phase; keep cheap-and-essential.
 
 ---
 
@@ -526,14 +598,16 @@ Subsequent ROADMAP Phase 1 sessions: 015 Cloud Run → 016 road-network distance
 
 - `data/raw/hkg_ppp_2020_UNadj_constrained.tif` — WorldPop GeoTIFF, ~231KB, downloaded from HDX
 - `data/processed/*.csv` — all generated outputs (gitignored, regenerable), including the three Session 013 k-sweep outputs (`ksweep_ozp_summary.csv`, `ksweep_ozp_all_restarts.csv`, `ksweep_ozp_best_facilities.csv`)
-- `data/processed/ozp_all_zones.geojson` — ~120 MB cached ArcGIS response (gitignored)
-- `data/processed/ozp_commercial_union.geojson` — ~1.27 MB filtered + unioned constraint geometry (gitignored)
+- `data/processed/ozp_all_zones.geojson` — ~120 MB cached ArcGIS response (gitignored; also excluded from Docker build context via `.dockerignore`)
+- `data/processed/ozp_commercial_union.geojson` — ~1.27 MB filtered + unioned constraint geometry (gitignored locally; **baked into Docker image** as of Session 014)
+- `data/processed/demand_points.csv` — ~1 MB demand point CSV (gitignored locally; **baked into Docker image** as of Session 014)
 - `docs/maps/*.html` — generated maps (gitignored, regenerable)
 - `cache/*.json` — osmnx OpenStreetMap cache (gitignored)
 - `.venv/` — Python virtual environment (gitignored)
+- Docker image `optiloc-hk:dev` — built locally, lives in Docker Desktop's image store (Session 015 will push it to Artifact Registry)
 
-Files IN Git: README.md, JOURNAL.md, CONTEXT.md, **docs/MATH.md**, **docs/ROADMAP.md**, requirements.txt, .gitignore, LICENSE, all `notebooks/*.py` (01–20), the thirteen committed screenshots in `docs/maps/*.png` (the eleven from earlier sessions plus `08_ksweep_diminishing_returns.png` and `09_ksweep_hub_locations.png` from Session 013), `data/raw/.gitkeep`, `data/processed/.gitkeep`.
+Files IN Git: README.md, JOURNAL.md, CONTEXT.md, **docs/MATH.md**, **docs/ROADMAP.md**, requirements.txt, .gitignore, LICENSE, all `notebooks/*.py` (01–20), the thirteen committed screenshots in `docs/maps/*.png` (the eleven from earlier sessions plus `08_ksweep_diminishing_returns.png` and `09_ksweep_hub_locations.png` from Session 013), `data/raw/.gitkeep`, `data/processed/.gitkeep`, **and as of Session 014: `api/__init__.py`, `api/config.py`, `api/models.py`, `api/solvers.py`, `api/main.py`, `api/requirements.txt`, `.dockerignore`, `Dockerfile`.**
 
 ---
 
-*Last updated: end of Session 013 (May 22, 2026), commit `0c7e830`. k-sweep diminishing returns + hub-location map gallery shipped. Two new landing-page-ready artifacts now exist. Session 014 (Docker + FastAPI) is next per ROADMAP Phase 1. Update this file at the end of every session that meaningfully changes project state.*
+*Last updated: end of Session 014 (May 23, 2026). FastAPI + Docker shipped. Eight new files committed under `api/` and repo root. Session 015 (first Cloud Run deploy) is next per ROADMAP Phase 1. Update this file at the end of every session that meaningfully changes project state.*
