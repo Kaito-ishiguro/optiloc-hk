@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import geopandas as gpd
+
 from shapely.geometry import Point
 from scipy.optimize import minimize
 
@@ -190,6 +190,7 @@ def main():
     print(f"  {len(demand):,} demand points, total weight {weights.sum():,.0f}")
 
     print(f"\nLoading OZP commercial union from {OZP_GEOJSON} ...")
+    import geopandas as gpd
     ozp_gdf = gpd.read_file(OZP_GEOJSON)
     raw_geom = ozp_gdf.iloc[0].geometry
     feasible_geom = raw_geom.buffer(BUFFER)
