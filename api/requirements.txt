@@ -1,0 +1,14 @@
+﻿# OptiLoc API runtime deps — lean subset for Docker image.
+# Excludes folium / matplotlib / osmnx / networkx / requests / rasterio.
+# Full dev env lives in repo-root requirements.txt.
+
+fastapi==0.136.1
+uvicorn[standard]==0.47.0
+slowapi==0.1.9
+numpy==2.4.4
+scipy==1.17.1
+pandas==3.0.2
+shapely==2.1.2
+geopandas==1.1.3
+pyogrio==0.12.1
+pyproj==3.7.2
