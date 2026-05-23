@@ -455,6 +455,165 @@ Road-network distance is Session 016 per ROADMAP — the blocking math
 foundation before first paid pilot.
 
 ---
+## Session 014 — 2026-05-23 — FastAPI + Docker ship
+**What I built / learned**
+
+FastAPI app with three endpoints (/healthz, /solve_weber, /solve_kmedian_ozp) wrapping the notebook solvers via importlib.util — same pattern Session 013 used in file 18. Zero math duplication; notebooks remain source of truth.
+Lean Docker image (python:3.14-slim) with non-root user, read-only root FS, 64MB tmpfs /tmp, HEALTHCHECK, and a stripped runtime deps list (no folium/matplotlib/osmnx/rasterio). Built in 4 min; build context just 3.69 MB thanks to .dockerignore allow-list.
+Security hardening end-to-end: Pydantic-bounded inputs (k ∈ [2,25], n_restarts ∈ [1,20]), slowapi rate limit (5/min/IP), asyncio.wait_for solver timeouts (30s Weber, 180s k-median), global exception handler with request_id (no stack-trace leakage), CORS open as deliberate Phase 1 design choice.
+Reproducibility verified inside the container: /solve_weber returns Session 008's 23-iter optimum at lon=114.17071, lat=22.33729; /solve_kmedian_ozp with k=3 returns Session 013's 384,054 best_objective exactly.
+
+**Key insight or aha moment**
+The right security posture is proportional to deployment stage, not maximal. The original AI-generated security checklist had me wanting to add API auth, disable /docs in production, lock CORS to specific origins, and add Celery — all correct for production SaaS but wrong for a Phase 1 portfolio asset where the entire point of /docs is to be the publicly-pokeable DM artifact. Cutting the right items (no auth, /docs public, CORS *) while keeping the right items (rate limit, bounded inputs, timeouts, sanitized errors, non-root, read-only FS) is a harder skill than just doing "all of them." The Phase 1 image is meaningfully smaller and the artifact meaningfully more demoable as a result.
+What I got stuck on
+
+Claude initially proposed an api/requirements.txt without geopandas/pyogrio/pyproj, only realizing after reading file 16 that it imports geopandas at module level. Adding ~80 MB of geo deps back was the right call vs refactoring file 16 mid-session — Phase 2 (Session 016 with road-network distance) is the natural place to introduce a shared optiloc/ package.
+Brief uncertainty about whether cp314 wheels existed on Linux for scipy/pandas/geopandas/pyogrio/pyproj. They did — no apt-get build-essential needed. The optimistic call paid off; image is ~50% smaller than the defensive multi-stage path.
+Minor reproducibility wart: /solve_weber returns objective=670,587 but Session 011 quoted 671,466 as the "single-facility Weber baseline." 0.13% gap, position identical to 5 decimals. Likely from GD/Newton vs Weiszfeld convergence at the EPS=1e-9 noise floor. Footnote, not a fix.
+
+**Next session's first move**
+**Session 015 — first Cloud Run deploy. Push optiloc-hk:dev to Artifact Registry in asia-east2, deploy to Cloud Run with the same --read-only security flags, hit the public URL's /docs to confirm Swagger renders on the open internet. Per ROADMAP Phase 1, this converts the DM artifact from "URL I can show you on my laptop" to "URL you can poke right now."
+**Time spent / mood**
+~3 hours, one sitting. Steady momentum, no rage-quits. The security-posture pruning and the cp314-wheel-availability call were the only thoughtful pauses.
+
+**Real-world meaning of the output**
+We now have a deployable container that serves Hong Kong facility-location answers over HTTP, with the Swagger /docs page as a clickable "this is alive" demo. The container's /solve_kmedian_ozp endpoint accepts caller-tunable k and n_restarts with input bounds — once on Cloud Run with a public URL, a prospective customer (EV charging operator, last-mile delivery, public-sector planner) can hit it from a DM link and see real HK optimization results in 10–100 seconds. The image is small enough for fast Cloud Run cold starts and hardened enough to leave running on a public IP without immediate abuse risk.
+
+---
+## Session 015 — 2026-05-23 — Cloud Run ship
+
+**What I built / learned**
+- Set up GCP project `ace-prep-496408` with Artifact Registry and Cloud Run APIs enabled
+- Created Artifact Registry repo `optiloc` in `asia-east2`, tagged and pushed `optiloc-hk:dev` as `v0.1.0`
+- Deployed to Cloud Run with `--allow-unauthenticated`, 1Gi memory, 1 CPU, concurrency=10, max-instances=3
+- Confirmed Swagger UI rendering at `https://optiloc-api-809774362984.asia-east2.run.app/docs` from a real browser — publicly accessible on the open internet
+
+**Key insight or aha moment**
+The step from "works on my laptop" to "works at a URL I can DM to anyone" is disproportionately large in narrative power relative to the technical effort. The deploy itself was ~10 commands and ~15 minutes. But the artifact changed class: it's no longer a demo, it's a live product. That URL is now the opening line of every cold outreach in Phase 2.
+
+**What I got stuck on**
+Nothing broke. McAfee WebAdvisor flagged the fresh `*.run.app` domain as "suspicious" — expected behavior for a brand-new URL with no reputation history, not a real issue.
+
+**Next session's first move**
+Session 016: road-network distance integration — swap straight-line Euclidean distance for OSRM or Google Distance Matrix API distances in the Weber and k-median solvers. This is math foundation #1 per ROADMAP and the blocking item before the first paid pilot conversation.
+
+**Time spent / mood**
+~20 minutes. Clean session — no errors, no backtracking. Satisfying.
+
+**Real-world meaning of the output**
+The DM artifact exists. `https://optiloc-api-809774362984.asia-east2.run.app/docs` is a live, publicly-pokeable API backed by real HK demographic data and real optimization math. Any EV charging operator, logistics manager, or retail planner Kaito cold-messages can hit `/solve_kmedian_ozp` with a `k` value and get back optimal facility locations in seconds — from their phone, without installing anything.
+
+---
+## Session 016 — 2026-05-23 — Road-network distances
+
+**What I built / learned**
+- File 21: downloaded HK driving network via osmnx (18,820 nodes, 35,848 edges),
+  snapped 41,288 demand points to nearest road nodes, aggregated to 12,513 unique
+  weighted nodes. Saved `demand_points_road.csv` and `demand_nodes_aggregated.csv`.
+- File 22: discrete road-network Weber via multi-start local search on the graph
+  (Dijkstra from candidate node + neighbours, move to best, repeat). Road optimum
+  at (22.32462, 114.18873) — 2.33 km southeast of Euclidean optimum. Runtime 12.8s.
+- File 23: road-network k-median (k=5, 3 restarts). Lloyd with road-distance
+  assignment (Dijkstra from each facility) + centroid-snap location update.
+  Best obj 43.9B m → 5,852 m/resident, 54.4% reduction from road Weber. Runtime 17.4s.
+- File 16 lazy-load refactor: moved `import geopandas as gpd` from module level
+  into `main()` so the API import no longer forces geopandas to load at startup.
+- Added `scikit-learn==1.8.0` to `requirements.txt` (required by osmnx nearest_nodes
+  on unprojected graphs).
+
+**Key insight or aha moment**
+The continuous Euclidean Weber problem has a unique global minimum — the objective
+is strictly convex, so Weiszfeld always converges to the same point regardless of
+start. The discrete road-network Weber breaks that guarantee. Three local-search
+starts in file 22 found two distinct local optima (97.9B m vs 96.2B m), and the
+seed placed right next to the Euclidean optimum found the *worse* one. Road topology
+introduces enough irregularity that even the k=1 problem is non-convex in the
+discrete setting. File 23 made this even more stark: three restarts found objectives
+of 54.2B, 49.4B, and 43.9B m — a 24% gap between worst and best for k=5.
+
+**What I got stuck on**
+PowerShell's single-quote strings don't interpolate backtick-n, so the `-replace`
+one-liner for the file-16 import refactor silently inserted a literal `` `n `` into
+the source file instead of a newline. Fixed by writing a small Python script to a
+temp file and running it. Lesson: for multi-line string manipulation in PowerShell,
+always use a Python helper or a here-string with double quotes.
+
+**Next session's first move**
+Session 017: Cloud Build CI/CD — connect the GitHub repo to Cloud Build so every
+push to main auto-builds and deploys a new Cloud Run revision.
+
+**Time spent / mood**
+~1.5 hours. Clean session — architecture decision made fast (Option C), three files
+shipped without major blockers, refactor done. Road non-convexity result was a
+genuine surprise.
+
+**Real-world meaning of the output**
+With 5 road-optimally placed facilities in Hong Kong, the average resident is
+**5.85 km by road** from their nearest facility — down from 12.83 km with a single
+facility. That 54.4% reduction is the number that goes in a pilot pitch: a logistics
+operator paying HKD 5/km per delivery run saves roughly HKD 35 per resident per
+round trip by going from 1 hub to 5. F4 (Kwun Tong / Kowloon Bay) dominates at
+42.5% of total population served, confirming that central-east Kowloon is the
+unavoidable gravity well regardless of whether you measure by straight line or road.
+
+---
+## Session 017 — 2026-05-23 — CI/CD pipeline live
+
+**What I built / learned**
+- Created `cloudbuild.yaml` with 3-step pipeline: build Docker image → push to Artifact Registry → deploy to Cloud Run with `--max-instances=3` and `--port=8000`
+- Connected GitHub repo to Cloud Build via GitHub App, created `deploy-on-push` trigger (asia-east2, `^main$` branch, ignores docs/README/JOURNAL/CONTEXT)
+- Created `cloudbuild-deployer` service account with least-privilege roles: Artifact Registry Writer, Cloud Run Developer, Service Account User, Logs Writer, Storage Admin
+- Discovered and fixed 4 missing-from-git issues: `Dockerfile`, `.dockerignore`, `api/` package, and `data/processed/demand_points.csv` + `ozp_commercial_union.geojson`
+
+**Key insight or aha moment**
+Cloud Build starts from a clean git clone every time — it only has what's committed. Local Docker builds had always worked because the laptop had all the files present regardless of git status. The gap between "works locally" and "works in CI" is almost always a gap between what exists on disk and what exists in the repo. Every file the Dockerfile COPYs must be committed.
+
+**What I got stuck on**
+Multiple build failures from missing files (Dockerfile, api/, data files) and a wrong default port (8080 vs 8000). Also a misleading Google 404 on `/healthz` that turned out to be browser cache — the API was actually live and `/docs` confirmed it.
+
+**Next session's first move**
+Session 018: landing page v1. Start by fetching ROADMAP.md to confirm the spec for what the landing page should contain.
+
+**Time spent / mood**
+Longer than expected due to the missing-files debugging loop, but the pipeline is solid now. Every future push to main auto-deploys.
+
+**Real-world meaning of the output**
+Every `git push` to main now triggers a full build and deploy automatically. No more manual `docker build` → `docker push` → `gcloud run deploy` sequence. From this point forward, shipping a code change is a single `git push`. That's production-grade DevOps workflow for a student portfolio project — exactly the kind of thing that impresses engineering interviewers.
+
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
 ---
 <!--
 Template for future sessions — copy-paste below this line:
