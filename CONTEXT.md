@@ -10,9 +10,9 @@ OptiLoc HK is a Hong Kong facility location optimizer being built by **Kaito Ish
 
 **https://github.com/Kaito-ishiguro/optiloc-hk**
 
-**Current phase:** Phase 1 active. Sessions 001–017 complete (solver pipeline, OZP zoning, k-median network, Dockerized FastAPI, Cloud Run deploy, road-network distance integration, Cloud Build CI/CD). **Session 015 shipped: container is live on Cloud Run at `https://optiloc-api-809774362984.asia-east2.run.app/docs`. Session 016 shipped: road-network Weber and k-median solvers (files 21–23), file-16 lazy-load refactor. Session 017 shipped: Cloud Build CI/CD pipeline — every push to main now auto-builds and deploys.** Next: Session 018 landing page v1. The canonical product/business plan is **`docs/ROADMAP.md`** (commit `57b630d`). Companion to CONTEXT.md (technical handoff) and MATH.md (mathematical reference). The DASE2135 final exam was on May 11, 2026 (in the past). Prof. Kuo has emailed back acknowledging the project and offering UG research collaboration. **FWD Group internship starts June 8, 2026.** Kaito plans to maintain ~1-3 sessions/day through the internship. Kaito is studying for the **Google Cloud Associate Cloud Engineer (ACE) certification** and has ~HKD 2,000 (~USD 255) in free GCP trial credit (project `ace-prep-496408`).
+**Current phase:** Phase 1 complete. Sessions 001–018 done. **Session 018 shipped: landing page v1 live at `https://optiloc-api-809774362984.asia-east2.run.app`.** Landing page served at `/`, Swagger moved to `/api/docs`. Formspree audit form live (`xdajdarn`). **Phase 1 exit criteria are now met** (live URL ✅, `/api/docs` ✅, road-network distance ✅, audit form delivers to Kaito ✅). Remaining Phase 1 exit criterion: Prof. Kuo follow-up email with Phase 1 results. Next: send that email, then begin Phase 2 scoping (capacitated p-median + target list). The canonical product/business plan is **`docs/ROADMAP.md`** (commit `57b630d`). Companion to CONTEXT.md (technical handoff) and MATH.md (mathematical reference). The DASE2135 final exam was on May 11, 2026 (in the past). Prof. Kuo has emailed back acknowledging the project and offering UG research collaboration. **FWD Group internship starts June 8, 2026.** Kaito plans to maintain ~1-3 sessions/day through the internship. Kaito is studying for the **Google Cloud Associate Cloud Engineer (ACE) certification** and has ~HKD 2,000 (~USD 255) in free GCP trial credit (project `ace-prep-496408`).
 
-**The immediate pending task at the start of this new chat: Session 018 — landing page v1.**
+**The immediate pending task at the start of this new chat: send Prof. Kuo the Phase 1 follow-up email, then scope Phase 2.**
 
 ---
 
@@ -125,11 +125,16 @@ Proportional security, not maximal. Phase 1 is a public portfolio asset. Skip it
 
 ## The project at a glance
 
-OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (population 7,496,988) → solves Weber and k-median facility-location variants → visualizes as Folium maps or matplotlib galleries. Solvers exposed over HTTP via containerized FastAPI, live on Cloud Run. Every push to main auto-deploys via Cloud Build.
+OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (population 7,496,988) → solves Weber and k-median facility-location variants → visualizes as Folium maps or matplotlib galleries. Solvers exposed over HTTP via containerized FastAPI, live on Cloud Run. Every push to main auto-deploys via Cloud Build. Landing page live at `/`, Swagger at `/api/docs`.
 
 ---
 
 ## Codebase reference — file by file
+
+### Frontend (Session 018)
+
+#### `frontend/index.html`
+Single-page landing. Dark navy aesthetic, Syne + DM Sans fonts, teal accent. Sections: nav, hero (animated live-API badge), stats bar (41,288 / 7.5M / 59.1% / 5,852m), 3-chart showcase (GitHub raw image URLs), how-it-works pipeline, math writeup, Formspree audit form. Formspree endpoint: `https://formspree.io/f/xdajdarn`. Images: `08_ksweep_diminishing_returns.png`, `four_solvers_wide.png`, `kmedian_ozp_map_wide.png` — all served from `raw.githubusercontent.com`.
 
 ### CI/CD layer (Session 017)
 
@@ -142,7 +147,7 @@ Region: asia-east2. Event: push to `^main$`. Ignored files: `README.md,JOURNAL.m
 #### Service account `cloudbuild-deployer`
 Roles: Artifact Registry Writer, Cloud Run Developer, Service Account User, Logs Writer, Storage Admin.
 
-### API + container layer (Sessions 014–015)
+### API + container layer (Sessions 014–015, updated 018)
 
 #### `api/__init__.py`
 `__version__ = "0.1.0"`.
@@ -157,13 +162,13 @@ Pydantic v2 request/response schemas with bounded inputs.
 Loads files 08 and 16 via importlib. Caches graph + demand data at startup. File 16 geopandas import is lazy.
 
 #### `api/main.py`
-FastAPI app. Endpoints: `GET /healthz`, `POST /solve_weber`, `POST /solve_kmedian_ozp`, `GET /docs`, `GET /redoc`. CORS open, slowapi rate limiter, asyncio timeouts, sanitized 500s.
+FastAPI app. `docs_url="/api/docs"`, `redoc_url="/api/redoc"`. Endpoints: `GET /` (landing page), `GET /healthz`, `POST /solve_weber`, `POST /solve_kmedian_ozp`, `GET /api/docs`, `GET /api/redoc`. CORS open, slowapi rate limiter, asyncio timeouts, sanitized 500s.
 
 #### `api/requirements.txt`
 fastapi, uvicorn, slowapi, numpy, scipy, pandas, shapely, geopandas, pyogrio, pyproj.
 
 #### `Dockerfile`
-Single-stage, `python:3.14-slim`. Non-root `appuser`, HEALTHCHECK, exposes 8000.
+Single-stage, `python:3.14-slim`. Non-root `appuser`, HEALTHCHECK, exposes 8000. COPYs: `api/`, `notebooks/08`, `notebooks/16`, `data/processed/demand_points.csv`, `data/processed/ozp_commercial_union.geojson`, `frontend/`.
 
 #### `.dockerignore`
 Allow-list pattern. Build context 3.69 MB.
@@ -205,6 +210,7 @@ Allow-list pattern. Build context 3.69 MB.
 - **Geographic:** rasterio, osmnx 2.1.0, shapely, GeoPandas, pyogrio, pyproj, scikit-learn 1.8.0
 - **Visualization:** Folium, matplotlib
 - **API:** FastAPI 0.136.1 + Uvicorn 0.47.0 + Pydantic 2.13.4 + slowapi 0.1.9
+- **Frontend:** Static HTML/CSS/JS. Syne + DM Sans (Google Fonts). Formspree for form handling.
 - **Container:** Docker Desktop 4.67.0, `python:3.14-slim`, linux/amd64
 - **Cloud:** GCP `ace-prep-496408`, `asia-east2`. Artifact Registry `optiloc`. Cloud Run `optiloc-api`. URL: `https://optiloc-api-809774362984.asia-east2.run.app`
 - **CI/CD:** Cloud Build trigger `deploy-on-push`, SA `cloudbuild-deployer`
@@ -230,17 +236,19 @@ Allow-list pattern. Build context 3.69 MB.
 
 ## Where we are right now
 
-**Session 017 is shipped.** CI/CD pipeline complete and verified:
+**Session 018 is shipped. Phase 1 is complete.**
 
-- `cloudbuild.yaml` with `--max-instances=3`, `--port=8000`
-- `deploy-on-push` trigger firing on push to main
-- `cloudbuild-deployer` SA with least-privilege roles
-- All Dockerfile dependencies committed to git
-- Live API confirmed: `https://optiloc-api-809774362984.asia-east2.run.app/docs`
+- Landing page live at `https://optiloc-api-809774362984.asia-east2.run.app`
+- Swagger at `/api/docs` ✅
+- Formspree audit form live ✅
+- Road-network distance implemented (Session 016) ✅
+- CI/CD auto-deploy on push to main (Session 017) ✅
 
-**Key lesson from Session 017:** Cloud Build clones the repo fresh every time. Every file the Dockerfile COPYs must be committed to git. Local Docker builds hide this gap because local files exist regardless of git status.
+**Remaining Phase 1 exit criterion:** Prof. Kuo follow-up email with Phase 1 results.
 
-**Next up: Session 018 — landing page v1.** Fetch ROADMAP.md first to confirm spec.
+**Next up:**
+1. Send Prof. Kuo the Phase 1 follow-up email (Claude drafts when asked)
+2. Begin Phase 2 scoping: capacitated p-median (math track) + HK operator target list (customer track)
 
 ---
 
@@ -264,13 +272,14 @@ Allow-list pattern. Build context 3.69 MB.
 - **014** — FastAPI + Docker. Local validation.
 - **015** — Cloud Run deploy. Live API.
 - **016** — Road-network solvers (files 21–23). Road Weber: 2.33 km shift. Road k-median: 5,852 m/resident.
-- **017** — Cloud Build CI/CD. `cloudbuild.yaml`, trigger, SA. Auto-deploy on push to main. Key lesson: all Dockerfile COPY targets must be in git.
+- **017** — Cloud Build CI/CD. `cloudbuild.yaml`, trigger, SA. Auto-deploy on push to main.
+- **018** — Landing page v1. `frontend/index.html`. Dark navy, Syne + DM Sans, Formspree form. Swagger moved to `/api/docs`. Phase 1 complete.
 
 ---
 
-## Files in Git (after Session 017)
+## Files in Git (after Session 018)
 
-README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, docs/ROADMAP.md, requirements.txt, .gitignore, LICENSE, cloudbuild.yaml, notebooks/01–23, docs/maps/*.png (13 screenshots), data/raw/.gitkeep, data/processed/.gitkeep, **data/processed/demand_points.csv**, **data/processed/ozp_commercial_union.geojson**, api/__init__.py, api/config.py, api/models.py, api/solvers.py, api/main.py, api/requirements.txt, .dockerignore, Dockerfile.
+README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, docs/ROADMAP.md, requirements.txt, .gitignore, LICENSE, cloudbuild.yaml, notebooks/01–23, docs/maps/*.png (13 screenshots), data/raw/.gitkeep, data/processed/.gitkeep, **data/processed/demand_points.csv**, **data/processed/ozp_commercial_union.geojson**, api/__init__.py, api/config.py, api/models.py, api/solvers.py, api/main.py, api/requirements.txt, .dockerignore, Dockerfile, **frontend/index.html**.
 
 ## Files NOT in Git
 
@@ -298,4 +307,4 @@ README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, docs/ROADMAP.md, requirements.t
 
 ---
 
-*Last updated: end of Session 017 (May 23, 2026). CI/CD pipeline shipped. Session 018 (landing page v1) is next. Update this file at the end of every session that meaningfully changes project state.*
+*Last updated: end of Session 018 (May 23, 2026). Landing page live. Phase 1 complete. Session 019 starts with Prof. Kuo email, then Phase 2 scoping. Update this file at the end of every session that meaningfully changes project state.*
