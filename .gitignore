@@ -239,3 +239,7 @@ venv/
 
 # osmnx cache (regenerable)
 cache/
+
+
+!data/processed/demand_points.csv
+!data/processed/ozp_commercial_union.geojson
