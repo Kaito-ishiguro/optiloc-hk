@@ -605,6 +605,39 @@ Clean session. Everything deployed first try after CI/CD was already in place fr
 OptiLoc HK now has a public face. Any ops director who receives the URL lands on a page that shows real HK data, real math results, and a clear ask — without needing to read a GitHub repo.
 
 ---
+## Session 019 — 2026-05-24 — Business Plan Consolidated
+
+**What I built / learned**
+- Consolidated the business plan: set a real money target ($3,000-8,000 USD by December 2026),
+  added Phase 0 (pre-internship sprint), and revised customer discovery with outcome-first framing
+- Updated ROADMAP.md to v2 — includes 90-day plan, handpick rule for free audits, technical FAQ
+  cheat sheet, warm connection strategy (Cathay Pacific + HKIA), and revised pricing
+- Completely rebuilt LinkedIn profile: new headline, About section, OptiLoc HK as Experience with
+  live URL, Tsinghua moved to Education, Services page published, Open to Work set to Recruiters only
+- Drafted Prof. Kuo Phase 1 follow-up email — ready to send
+- Identified that the live API still uses Euclidean distance — road-network solvers exist in
+  notebooks 21-23 but are not wired into any endpoint yet
+
+**Key insight or aha moment**
+The product gap is real: a customer hitting the live API today gets back raw coordinates calculated
+with straight-line distance, not road distance. The road-network solvers are already built —
+wiring them into the API and adding a map output endpoint are the two things that turn this from
+a math engine into something worth demoing. Visual first impression matters: a VP of Operations
+will not engage with a product that returns coordinates in JSON.
+
+**What I got stuck on**
+Honest clarity on what the product actually does versus what I thought it did. The API exposes
+less than the notebooks contain. Also had to work through whether to stay solo or find a
+co-founder — conclusion: stay solo until first paid pilot, then reassess.
+
+**Next session's first move**
+Session 020: wire the road-network Weber and k-median solvers (notebooks 21-23) into new API
+endpoints. Then add a map output endpoint that returns an interactive Folium map. This is the
+foundation the demo video needs.
+
+**Time spent / mood**
+Long session. Strategic, high energy. LinkedIn done. Business plan real. Ready to execute.
+
 ---
 ---
 ---
