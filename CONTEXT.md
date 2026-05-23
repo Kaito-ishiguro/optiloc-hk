@@ -10,13 +10,11 @@ OptiLoc HK is a Hong Kong facility location optimizer being built by **Kaito Ish
 
 **https://github.com/Kaito-ishiguro/optiloc-hk**
 
-**Current phase:** Phase 1 active. Sessions 001–014 complete (solver pipeline, OZP zoning, k-median network, Dockerized FastAPI). **Session 015 shipped: container is live on Cloud Run at `https://optiloc-api-809774362984.asia-east2.run.app/docs` — publicly accessible on the open internet.** Next: Session 016 road-network distance integration (math foundation #1, blocking before first paid pilot) → Session 017 Cloud Build CI/CD → Session 018 landing page v1. The canonical product/business plan is **`docs/ROADMAP.md`** (commit `57b630d`). Companion to CONTEXT.md (technical handoff) and MATH.md (mathematical reference). The DASE2135 final exam was on May 11, 2026 (in the past). Prof. Kuo has emailed back acknowledging the project and offering UG research collaboration. **FWD Group internship starts June 8, 2026.** Kaito plans to maintain ~1-3 sessions/day through the internship. Kaito is studying for the **Google Cloud Associate Cloud Engineer (ACE) certification** and has ~HKD 2,000 (~USD 255) in free GCP trial credit (project `ace-prep-496408`).
+**Current phase:** Phase 1 active. Sessions 001–016 complete (solver pipeline, OZP zoning, k-median network, Dockerized FastAPI, Cloud Run deploy, road-network distance integration). **Session 015 shipped: container is live on Cloud Run at `https://optiloc-api-809774362984.asia-east2.run.app/docs`. Session 016 shipped: road-network Weber and k-median solvers (files 21–23), file-16 lazy-load refactor.** Next: Session 017 Cloud Build CI/CD → Session 018 landing page v1. The canonical product/business plan is **`docs/ROADMAP.md`** (commit `57b630d`). Companion to CONTEXT.md (technical handoff) and MATH.md (mathematical reference). The DASE2135 final exam was on May 11, 2026 (in the past). Prof. Kuo has emailed back acknowledging the project and offering UG research collaboration. **FWD Group internship starts June 8, 2026.** Kaito plans to maintain ~1-3 sessions/day through the internship. Kaito is studying for the **Google Cloud Associate Cloud Engineer (ACE) certification** and has ~HKD 2,000 (~USD 255) in free GCP trial credit (project `ace-prep-496408`).
 
-**The immediate pending task at the start of this new chat: Session 016.**
+**The immediate pending task at the start of this new chat: Session 017.**
 
-Per `docs/ROADMAP.md` Phase 1, Session 016 = **road-network distance integration** — swap straight-line Euclidean distance for real road-network distances in the Weber and k-median solvers. This is math foundation #1 per ROADMAP and the blocking item before the first paid pilot conversation. Also the right session to do the file-16 geopandas lazy-load refactor (deferred from Session 014) since both touch the same surface area. Options: self-hosted OSRM on Cloud Run, or Google Distance Matrix API. Decision to be made at session start based on cost/complexity tradeoff.
-
-Sessions 017-018 follow per ROADMAP Phase 1: Cloud Build CI/CD (017) → landing page v1 (018).
+Per `docs/ROADMAP.md` Phase 1, Session 017 = **Cloud Build CI/CD** — connect the GitHub repo to Cloud Build so every push to main auto-builds and deploys a new Cloud Run revision. Session 018 follows: landing page v1.
 
 ---
 
@@ -61,6 +59,8 @@ Then walk him through the upload process using the standard step-by-step rhythm:
 3. Commit: `git add CONTEXT.md`, `git commit -m "Update CONTEXT.md after Session NNN"`, `git push`
 4. Re-upload to Claude Project knowledge: open the OptiLoc HK Project → delete the old CONTEXT.md from Project knowledge → upload the new version
 5. Start new chat in the Project with prompt: *"Where are we and what's next?"* (or with the session number directly: *"Session NNN: <direction>"* — the latter is more token-efficient).
+
+**Always generate CONTEXT.md as a downloadable file** so Kaito can move it into the repo directly without copy-pasting.
 
 ---
 
@@ -150,175 +150,138 @@ When Kaito brings security questions or AI-generated security checklists, **the 
 
 ## The project at a glance
 
-OptiLoc's pipeline ingests the WorldPop population raster → derives 41,288 weighted demand points (total population 7,496,988) → solves variants of the Weber facility-location problem (unconstrained, OSM-Kowloon-polygon-constrained, OZP-commercial-constrained) → and k-median network variants (unconstrained, OZP-constrained, plus a full k-sweep over k ∈ {3, 5, 8, 10, 15, 20}) → visualizing each as an interactive Folium map or a static matplotlib gallery. **As of Session 014, the solvers are exposed over HTTP via a containerized FastAPI app (`api/` directory, `Dockerfile`). As of Session 015, the container is live on Cloud Run at `https://optiloc-api-809774362984.asia-east2.run.app`.** All numbered scripts live in `notebooks/` (files 01–20); each is described in the codebase reference below. Math reference (objectives, gradients, KKT, Weiszfeld, Lloyd) lives in `docs/MATH.md`. Product/business plan lives in `docs/ROADMAP.md`. Claude can `web_fetch` either when needed mid-session.
+OptiLoc's pipeline ingests the WorldPop population raster → derives 41,288 weighted demand points (total population 7,496,988) → solves variants of the Weber facility-location problem (unconstrained, OSM-Kowloon-polygon-constrained, OZP-commercial-constrained, road-network-distance) → and k-median network variants (unconstrained, OZP-constrained, road-network-distance, plus a full k-sweep over k ∈ {3, 5, 8, 10, 15, 20}) → visualizing each as an interactive Folium map or a static matplotlib gallery. **As of Session 014, the solvers are exposed over HTTP via a containerized FastAPI app. As of Session 015, the container is live on Cloud Run at `https://optiloc-api-809774362984.asia-east2.run.app`. As of Session 016, road-network distance solvers are implemented in notebooks 21–23.** All numbered scripts live in `notebooks/` (files 01–23). Math reference lives in `docs/MATH.md`. Product/business plan lives in `docs/ROADMAP.md`.
 
 ---
 
 ## Codebase reference — file by file
 
-Every file in `notebooks/`, plus the API + container layer added in Session 014, and what each does. Use this as ground truth.
-
 ### API + container layer (Session 014)
 
 #### `api/__init__.py`
-
-Marks `api/` as a Python package and exposes `__version__ = "0.1.0"`. Imported by `api/main.py` for the FastAPI `version=` field.
+Marks `api/` as a Python package and exposes `__version__ = "0.1.0"`.
 
 #### `api/config.py`
-
-Centralizes all paths, security limits, and solver defaults for the API. Includes:
-- Path resolution via `Path(__file__).resolve().parent.parent` (works both locally and inside the container).
-- DoS-prevention ceilings: `MAX_K=25`, `MAX_RESTARTS=20`.
-- `RATE_LIMIT_SOLVE = "5/minute"` (per-IP, applied to `/solve_*`).
-- Wall-clock timeouts: `WEBER_TIMEOUT_S=30`, `KMEDIAN_TIMEOUT_S=180`.
-- Solver defaults matching Session 012/013: `DEFAULT_K=5`, `DEFAULT_RESTARTS=10`, `BUFFER_DEG=1e-6`, `RNG_SEED=42`.
+Centralizes all paths, security limits, and solver defaults. DoS-prevention ceilings: `MAX_K=25`, `MAX_RESTARTS=20`. Rate limit: `5/minute`. Timeouts: Weber 30s, k-median 180s.
 
 #### `api/models.py`
-
-Pydantic v2 request/response schemas. Bounded inputs (`k`, `n_restarts` with `Field(ge=, le=)`) prevent pathological-value DoS. `WeberRequest` is empty for Session 014 (no caller-supplied params yet). Response models include nested `Facility` and `RestartSummary` so the response is self-documenting in Swagger.
+Pydantic v2 request/response schemas with bounded inputs.
 
 #### `api/solvers.py`
-
-Loads `notebooks/08_solve_weber_weiszfeld.py` and `notebooks/16_solve_kmedian_ozp.py` as modules via `importlib.util.spec_from_file_location`. Caches the loaded modules + demand points CSV + buffered OZP geometry at FastAPI startup via `initialize_solvers()`. Thin wrappers `solve_weber()` and `solve_kmedian_ozp(k, n_restarts)` are what the endpoints call.
-
-**Gotcha caught in Session 014:** file 16 imports `geopandas as gpd` at module level. When the API imports file 16 via importlib, that top-level import fires, so the container needs `geopandas + pyogrio + pyproj` in its requirements file. Deferred refactor (lazy-load geopandas inside `main()`) noted for Session 016.
+Loads files 08 and 16 via importlib. Caches graph + demand data at startup. **File 16's geopandas import is now lazy (inside `main()`) so the API import no longer triggers geopandas loading at startup.**
 
 #### `api/main.py`
-
-The FastAPI app. Exposes:
-- `GET /healthz` — liveness probe
-- `POST /solve_weber` — Weiszfeld on baked-in HK demand
-- `POST /solve_kmedian_ozp` — k-median + OZP commercial constraint, with caller-tunable `k` and `n_restarts`
-- `GET /docs` — Swagger UI (public — this IS the DM artifact in Phase 1)
-- `GET /redoc` — ReDoc (also public)
-
-Security layer: slowapi rate limiter, `asyncio.wait_for` solver timeouts, global exception handler with sanitized 500 + request_id. CORS open via `allow_origins=["*"]` (deliberate Phase 1 choice).
+FastAPI app. Endpoints: `GET /healthz`, `POST /solve_weber`, `POST /solve_kmedian_ozp`, `GET /docs`, `GET /redoc`. CORS open, slowapi rate limiter, asyncio timeouts, sanitized 500s.
 
 #### `api/requirements.txt`
-
-Lean runtime dep list: `fastapi==0.136.1`, `uvicorn[standard]==0.47.0`, `slowapi==0.1.9`, `numpy==2.4.4`, `scipy==1.17.1`, `pandas==3.0.2`, `shapely==2.1.2`, `geopandas==1.1.3`, `pyogrio==0.12.1`, `pyproj==3.7.2`.
+`fastapi==0.136.1`, `uvicorn[standard]==0.47.0`, `slowapi==0.1.9`, `numpy==2.4.4`, `scipy==1.17.1`, `pandas==3.0.2`, `shapely==2.1.2`, `geopandas==1.1.3`, `pyogrio==0.12.1`, `pyproj==3.7.2`.
 
 #### `Dockerfile`
-
-Single-stage build off `python:3.14-slim`. Non-root `appuser`, `HEALTHCHECK` via urllib.request every 30s, exposes 8000, `CMD` uses `sh -c` so Cloud Run's `${PORT}` env var expands at runtime.
+Single-stage build off `python:3.14-slim`. Non-root `appuser`, `HEALTHCHECK`, exposes 8000.
 
 #### `.dockerignore`
-
-Allow-list pattern. Build context 3.69 MB. Excludes the 120 MB `ozp_all_zones.geojson` cache and all dev-only files.
+Allow-list pattern. Build context 3.69 MB.
 
 ### `notebooks/01_ingest_worldpop.py`
-
-Converts WorldPop GeoTIFF raster into `data/processed/demand_points.csv` with columns `(lat, lon, weight)`. ~41,288 demand points, total weight ~7.5M.
+Converts WorldPop GeoTIFF → `demand_points.csv`. ~41,288 demand points, total weight ~7.5M.
 
 ### `notebooks/02_render_demand_points.py`
-
 HK population heatmap. Output: `docs/maps/01_first_map.html`.
 
 ### `notebooks/03_solve_weber.py`
-
-Unconstrained Weber problem. Three solvers (GD, Newton, BFGS) from single start. All converge to lon=114.17071, lat=22.33729 (Sham Shui Po / Shek Kip Mei area).
+Unconstrained Weber. GD + Newton + BFGS. Optimum at lon=114.17071, lat=22.33729 (Sham Shui Po / Shek Kip Mei).
 
 ### `notebooks/03_solve_weber_multi.py`
-
-Same math, 4 starting points. Newton uses backtracking line search (added after singular-Hessian failure from Tung Chung start).
+Same math, 4 starting points. Newton uses backtracking line search.
 
 ### `notebooks/04_visualize_convergence.py`
-
-Session 004 hero map — 8 convergence trails + 4 starts + gold optimum star. Output: `docs/maps/02_convergence_map.html`.
+8 convergence trails + 4 starts + gold optimum star. Output: `docs/maps/02_convergence_map.html`.
 
 ### `notebooks/05_solve_constrained.py`
-
-KKT-constrained Weber (OSM Kowloon polygon + MTR proximity + 5 competitor exclusion). SLSQP with signed-distance constraints. Constrained optimum at (114.17323, 22.34038) — Beacon Hill / Tai Wo Ping area.
+KKT-constrained Weber (OSM Kowloon polygon + MTR proximity + 5 competitor exclusion). SLSQP. Constrained optimum at (114.17323, 22.34038).
 
 ### `notebooks/06_visualize_constrained.py`
-
-Output: `docs/maps/03_constrained_map.html` + two screenshots.
+Output: `docs/maps/03_constrained_map.html`.
 
 ### `notebooks/07_condition_number.py`
-
-Hessian conditioning across HK. κ ranges 1.24–3.25 — Weber uniformly well-conditioned. Non-quadratic spatial variation in curvature is the real reason GD is slow, not high κ.
+Hessian conditioning across HK. κ ranges 1.24–3.25.
 
 ### `notebooks/08_solve_weber_weiszfeld.py`
-
-Weiszfeld + 4-solver comparison. All converge to same optimum to 10⁻⁹ degrees. Weiszfeld: 23 iters, ~7.6ms. Newton: 4 iters, ~7.2ms. BFGS: 7 iters, ~5.5ms. GD: 255 iters, ~55ms. **Imported by `api/solvers.py`.**
+Weiszfeld + 4-solver comparison. All converge to same optimum to 10⁻⁹ degrees. **Imported by `api/solvers.py`.**
 
 ### `notebooks/09_visualize_four_solvers.py`
-
-Four-solver convergence map. Output: `docs/maps/04_four_solvers_map.html` + two screenshots.
+Four-solver convergence map. Output: `docs/maps/04_four_solvers_map.html`.
 
 ### `notebooks/10_fetch_ozp.py`
-
-Paginated fetch of 11,963 HK OZP polygons from ArcGIS REST. Output: `data/processed/ozp_all_zones.geojson` (~120 MB, gitignored).
+Paginated fetch of 11,963 HK OZP polygons from ArcGIS REST.
 
 ### `notebooks/11_filter_and_union_ozp.py`
-
-Filter to 590 C+CDA features, union into 499-piece MultiPolygon (10.30 km², 0.9% of HK land area). Output: `data/processed/ozp_commercial_union.geojson` (~1.27 MB, baked into Docker image).
+Filter to 590 C+CDA features, union into 499-piece MultiPolygon (10.30 km²).
 
 ### `notebooks/12_solve_constrained_ozp.py`
-
-Weber constrained to OZP commercial union. Buffer-smoothness fix (`.buffer(1e-6)`). SLSQP Exit mode 0 in 16 iterations. Optimum: (114.16944, 22.33321) — Shek Kip Mei, ~474 m southwest of unconstrained.
+Weber constrained to OZP commercial union. SLSQP Exit mode 0 in 16 iters. Optimum: (114.16944, 22.33321).
 
 ### `notebooks/13_visualize_ozp_constrained.py`
-
-OZP-constrained comparison map with 499 C+CDA polygons overlay. Output: `docs/maps/05_ozp_constrained_map.html` + two screenshots.
+Output: `docs/maps/05_ozp_constrained_map.html`.
 
 ### `notebooks/14_solve_kmedian.py`
-
-k-median (k=5, 10 restarts). Lloyd + Weiszfeld. Best obj 274,830 = 59.1% reduction from single-facility. ≥4 distinct local minima — empirical non-convexity proof. Runtime ~5.74s.
+k-median (k=5, 10 restarts). Best obj 274,830 = 59.1% reduction. ≥4 local minima.
 
 ### `notebooks/15_visualize_kmedian.py`
-
-k=5 k-median map with Voronoi service areas. Output: `docs/maps/06_kmedian_map.html` + two screenshots.
+k=5 k-median map with Voronoi. Output: `docs/maps/06_kmedian_map.html`.
 
 ### `notebooks/16_solve_kmedian_ozp.py`
-
-OZP-constrained k-median. Conditional Weiszfeld → SLSQP fallback (SLSQP fired ~100% of time empirically). Best obj 277,595 = +1.0% penalty over unconstrained. 9 distinct local minima. Runtime ~107s. **Imported by `api/solvers.py`.**
+OZP-constrained k-median. Best obj 277,595 = +1.0% penalty. 9 local minima. **geopandas import is now lazy (inside `main()`) — API import no longer triggers geopandas loading.** **Imported by `api/solvers.py`.**
 
 ### `notebooks/17_visualize_kmedian_ozp.py`
-
-OZP-constrained k=5 map with commercial-zone overlay + Voronoi cells. Output: `docs/maps/07_kmedian_ozp_map.html` + two screenshots.
+Output: `docs/maps/07_kmedian_ozp_map.html`.
 
 ### `notebooks/18_ksweep_ozp.py`
-
-k-sweep over k ∈ {3, 5, 8, 10, 15, 20}, 10 restarts each. Total runtime 6.3 min. Elbow at k ≈ 8–10. Convergence rate drops at k=20 (5/10).
+k-sweep over k ∈ {3, 5, 8, 10, 15, 20}. Elbow at k ≈ 8–10.
 
 ### `notebooks/19_visualize_ksweep.py`
-
 Two-panel diminishing-returns chart. Output: `docs/maps/08_ksweep_diminishing_returns.png`.
 
 ### `notebooks/20_visualize_ksweep_maps.py`
+2×3 hub-location gallery. Output: `docs/maps/09_ksweep_hub_locations.png`.
 
-2×3 hub-location gallery at each k. Output: `docs/maps/09_ksweep_hub_locations.png`.
+### `notebooks/21_road_network_prep.py` *(Session 016)*
+Downloads HK driving network via osmnx (18,820 nodes, 35,848 edges). Snaps 41,288 demand points to nearest road nodes → 12,513 unique nodes. Saves `demand_points_road.csv` and `demand_nodes_aggregated.csv`. Caches graph as `hk_road_network.graphml`.
+
+### `notebooks/22_solve_weber_road.py` *(Session 016)*
+Discrete road-network Weber. Multi-start local search on the graph (Dijkstra from candidate node + neighbours, move to best, repeat). 3 seeds. Road optimum: (22.32462, 114.18873) — 2.33 km southeast of Euclidean optimum (Sham Shui Po → To Kwa Wan / Hung Hom). Avg road distance per resident: 12,831 m. Runtime 12.8s. Key finding: discrete road Weber has multiple local optima unlike continuous Euclidean Weber.
+
+### `notebooks/23_solve_kmedian_road.py` *(Session 016)*
+Road-network k-median (k=5, 3 restarts). Lloyd with Dijkstra assignment + centroid-snap location update. Best obj 43.9B m → **5,852 m/resident**, 54.4% reduction from road Weber. 3 restarts found objectives of 54.2B / 49.4B / 43.9B m (24% gap — strong non-convexity). F4 (Kwun Tong/Kowloon Bay) dominates at 42.5% of population. Runtime 17.4s.
 
 ---
 
 ## The math, frozen for reference
 
-Math reference (objectives, gradients, Hessian, Weiszfeld, KKT, k-median, Lloyd, constrained k-median) is in **`docs/MATH.md`**. When math grounding is needed mid-session, `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/MATH.md.
+Math reference lives in **`docs/MATH.md`**. `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/MATH.md when needed.
 
 ## The product/business plan
 
-Product and business roadmap is in **`docs/ROADMAP.md`** (shipped at commit `57b630d`, May 22, 2026). Canonical 5-phase plan. When business/product context is needed mid-session, `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/ROADMAP.md.
+Lives in **`docs/ROADMAP.md`** (commit `57b630d`). `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/ROADMAP.md when needed.
 
 ---
 
 ## Tech stack
 
 - **Language:** Python 3.14
-- **Environment:** `venv` at `.venv/`, activated via `.venv\Scripts\Activate.ps1` on Windows
-- **Package install:** `python -m pip install -r requirements.txt` (NOT `pip install` — Smart App Control blocks unsigned pip.exe)
+- **Environment:** `venv` at `.venv/`, activated via `.venv\Scripts\Activate.ps1`
+- **Package install:** `python -m pip install -r requirements.txt`
 - **Numerical:** NumPy, SciPy (BFGS, SLSQP)
-- **Geographic:** rasterio, osmnx, shapely, GeoPandas, `requests`
-- **Visualization:** Folium (interactive HTML maps), matplotlib (static PNGs)
+- **Geographic:** rasterio, osmnx 2.1.0, shapely, GeoPandas, pyogrio, pyproj, scikit-learn 1.8.0 (osmnx nearest_nodes dependency)
+- **Visualization:** Folium, matplotlib
 - **Tabular:** pandas
-- **Module reuse:** `importlib.util.spec_from_file_location` for loading numbered scripts
+- **Module reuse:** `importlib.util.spec_from_file_location`
 - **HTTP API:** FastAPI 0.136.1 + Uvicorn 0.47.0 + Pydantic 2.13.4 + slowapi 0.1.9
-- **Containerization:** Docker Desktop 4.67.0 (Engine 29.3.1) on Windows with WSL2, `python:3.14-slim` base, linux/amd64
+- **Containerization:** Docker Desktop 4.67.0 (Engine 29.3.1), `python:3.14-slim`, linux/amd64
 - **Cloud:** GCP project `ace-prep-496408`, region `asia-east2`. Artifact Registry repo `optiloc`. Cloud Run service `optiloc-api`. Live URL: `https://optiloc-api-809774362984.asia-east2.run.app`
-- **Version control:** Git, public GitHub repo at `github.com/Kaito-ishiguro/optiloc-hk`
+- **Version control:** Git, public GitHub at `github.com/Kaito-ishiguro/optiloc-hk`
 
-**Planned for ROADMAP Phase 1 (Sessions 016–018):**
-- Session 016: road-network distance (OSRM self-hosted on Cloud Run or Google Distance Matrix API) + file-16 geopandas lazy-load refactor
+**Planned for ROADMAP Phase 1 (Sessions 017–018):**
 - Session 017: Cloud Build CI/CD from GitHub
 - Session 018: landing page v1
 
@@ -326,58 +289,59 @@ Product and business roadmap is in **`docs/ROADMAP.md`** (shipped at commit `57b
 
 ## Environment specifics (Windows quirks)
 
-Kaito is on Windows 11 with PowerShell.
-
-- **Smart App Control was disabled** in Session 002 to allow pandas/rasterio C extensions to load.
-- **PowerShell `mkdir -p` doesn't work.** Use comma-separated args or `New-Item -ItemType Directory -Force`.
-- **`pip` direct calls can be blocked by SAC.** Always use `python -m pip install ...`
-- **`Move-Item` with `-Force`** is needed if the destination file exists.
-- **Git on Windows complains about LF→CRLF line endings.** Harmless; ignore.
-- **`osmnx` creates a `cache/` folder** in the repo root. Gitignored.
+- **Smart App Control was disabled** in Session 002.
+- **PowerShell `mkdir -p` doesn't work.** Use `New-Item -ItemType Directory -Force`.
+- **`pip` direct calls can be blocked.** Always use `python -m pip install ...`
+- **`Move-Item` with `-Force`** needed if destination exists.
+- **`&&` is not valid in PowerShell.** Use `;` to chain commands.
+- **Multi-line string replacement in PowerShell is unreliable.** Backtick-n in single-quoted strings is literal, not a newline. Use a Python helper script for any multi-line file edits.
 - **Activate venv first** in every new PowerShell session: `cd "C:\Users\Kaito Ishiguro\Documents\optiloc-hk"` then `.venv\Scripts\Activate.ps1`.
+- **`Invoke-RestMethod`** for HTTP endpoints, NOT `curl`.
+- **Docker Desktop** must be running before `docker build` / `docker run`.
+- **Git on Windows** complains about LF→CRLF line endings. Harmless; ignore.
 - **Snipping Tool** (`Win+Shift+S`) for screenshots, paste into Paint, save as PNG into `docs/maps/`.
-- **For PowerShell one-liner Python with `requests`:** double quotes on the outside, single quotes inside. Don't use multi-line `-c` strings.
-- **PowerShell here-strings** (`@' ... '@`) require the closing `'@` at column 0. Single-quoted here-strings don't interpolate `$VARS` — safe for Dockerfile and Python content.
-- **`Invoke-RestMethod`** for hitting HTTP endpoints from PowerShell, NOT `curl`.
-- **Docker Desktop on Windows** runs Linux containers via WSL2. Daemon must be running before `docker build` / `docker run`.
 
 ---
 
-## Where we are right now (the immediate state)
+## Where we are right now
 
-**Session 015 is shipped.** The OptiLoc API is live on Cloud Run:
+**Session 016 is shipped.** Road-network distance integration complete:
 
-- **URL:** `https://optiloc-api-809774362984.asia-east2.run.app`
-- **Swagger:** `https://optiloc-api-809774362984.asia-east2.run.app/docs` — confirmed rendering in a real browser from the open internet
-- **Image:** `asia-east2-docker.pkg.dev/ace-prep-496408/optiloc/optiloc-hk:v0.1.0` in Artifact Registry
-- **Config:** `--allow-unauthenticated`, 1Gi memory, 1 CPU, concurrency=10, max-instances=3, region `asia-east2`
+- `notebooks/21_road_network_prep.py` — HK road network downloaded, demand points snapped
+- `notebooks/22_solve_weber_road.py` — road Weber, 2.33 km shift from Euclidean optimum
+- `notebooks/23_solve_kmedian_road.py` — road k-median k=5, 5,852 m/resident (54.4% reduction)
+- `notebooks/16_solve_kmedian_ozp.py` — geopandas import moved inside `main()` (lazy-load)
+- `scikit-learn==1.8.0` added to `requirements.txt`
 
-This is the Phase 1 DM artifact. Anyone Kaito cold-messages can hit the URL right now without installing anything.
+**Road-network key results:**
+- Road Weber optimum: (22.32462, 114.18873), avg 12,831 m/resident
+- Road k-median (k=5) best: 5,852 m/resident, 54.4% reduction
+- Discrete road problem has stronger non-convexity than Euclidean (24% obj gap across 3 restarts)
 
-**Next up: Session 016 — road-network distance integration.** Decision to make at session start: self-hosted OSRM on Cloud Run vs Google Distance Matrix API. Also: file-16 geopandas lazy-load refactor (deferred from Session 014 — `import geopandas as gpd` at module level in file 16 forces the Docker image to carry geopandas even though the API's `lloyd_one_restart` function doesn't use it; moving the import inside `main()` would allow a leaner dep list in a future image rebuild).
+**Next up: Session 017 — Cloud Build CI/CD.** Connect GitHub repo to Cloud Build so every push to main auto-builds and deploys a new Cloud Run revision.
 
 ---
 
 ## Session history (compressed)
 
-- **Session 001 — Project genesis.** Scoped the project, picked Weber facility location, decided on logistics pivot for Phase 3.
-- **Session 002 — WorldPop ingestion pipeline.** Set up Python env (with SAC fix), built the data pipeline, rendered 41k demand points.
-- **Session 003 — Hand-rolled solvers.** Derived gradient + Hessian by hand. GD + Newton + BFGS. Optimum at Sham Shui Po / Shek Kip Mei area.
-- **Session 004 — Multi-start visualization.** 4 starting points × 2 methods. Added backtracking line search to Newton after singular-Hessian failure.
-- **Session 005 — KKT-constrained optimization.** Hand-derived Lagrangian + 4 KKT conditions. Signed-distance constraints. Constrained optimum on OSM "Kowloon" polygon boundary, Beacon Hill / Tai Wo Ping area.
-- **Session 006 — README + Phase 1 shipped.** Polished README, screenshots, LinkedIn post draft.
-- **Session 007 / Integration #1 — Condition number analysis.** κ ranges 1.24–3.25 across HK; Weber uniformly well-conditioned. Non-quadratic spatial variation in curvature is the real reason GD is slow.
-- **Email from Prof. Kuo (between sessions).** Acknowledged the project, suggested ArcGIS and Weiszfeld, offered UG research collaboration.
-- **Session 008+009 — Weiszfeld + four-solver visualization.** 4-solver comparison; all converge to same optimum to 10⁻⁹ degrees. Weiszfeld ties Newton on wall-clock despite linear vs quadratic rate.
-- **Email reply to Prof. Kuo sent.** Four-solver results + commitment to ArcGIS/OZP integration.
-- **Session 010 — ArcGIS / OZP commercial zoning integration.** Fetched 11,963 OZP polygons, filtered to 590 C+CDA features, unioned into 499-piece MultiPolygon (10.30 km²). Constrained Weber optimum at Shek Kip Mei.
-- **Session 010b — SLSQP buffer-smoothness fix.** `.buffer(1e-6)`. SLSQP Exit mode 0 in 16 iterations.
-- **Session 011 — k-median network + Voronoi visualization.** Lloyd + Weiszfeld at k=5, 10 restarts. Best obj 274,830 = 59.1% reduction. ≥4 distinct local minima.
-- **Session 012 — Constrained k-median shipped.** Best obj 277,595 = +1.0% penalty. 9 distinct local minima. SLSQP fired ~100% of time. Phase 1c+ shipped. Math reference extracted to `docs/MATH.md`.
-- **Inter-session — 2026-05-22 — Strategic pivot & roadmap.** Rebuilt business plan as realistic 5-phase roadmap. Shipped `docs/ROADMAP.md`. Primary goal clarified: gain repeatable pitching/presenting experience with operational decision-makers.
-- **Session 013 — 2026-05-22 — k-sweep diminishing returns + hub-location maps.** Files 18–20 shipped. k-sweep over k ∈ {3,5,8,10,15,20}. Elbow at k ≈ 8–10. Spatial finding: marginal hubs at high k cluster in urban density, not underserved areas.
-- **Session 014 — 2026-05-23 — FastAPI + Docker ship.** Eight new files: `api/` package + `Dockerfile` + `.dockerignore`. Solvers exposed over HTTP. Security hardening. Image built, validated locally. `optiloc-hk:dev` reproduced all notebook results exactly inside the container.
-- **Session 015 — 2026-05-23 — Cloud Run ship.** Enabled Artifact Registry + Cloud Run APIs on `ace-prep-496408`. Created `optiloc` repo in `asia-east2`. Tagged + pushed `v0.1.0`. Deployed to Cloud Run. Swagger confirmed live at `https://optiloc-api-809774362984.asia-east2.run.app/docs`. Phase 1 DM artifact exists.
+- **Session 001** — Project genesis. Scoped the project, picked Weber facility location.
+- **Session 002** — WorldPop ingestion pipeline. SAC fix, data pipeline, 41k demand points.
+- **Session 003** — Hand-rolled solvers. GD + Newton + BFGS. Optimum at Sham Shui Po.
+- **Session 004** — Multi-start visualization. Backtracking line search after singular Hessian.
+- **Session 005** — KKT-constrained optimization. SLSQP. Constrained optimum at Beacon Hill.
+- **Session 006** — README + Phase 1 shipped. LinkedIn post.
+- **Session 007** — Condition number analysis. κ ranges 1.24–3.25.
+- **Email from Prof. Kuo** — Acknowledged project, offered UG research collaboration.
+- **Sessions 008+009** — Weiszfeld + four-solver comparison. All converge to 10⁻⁹ degrees.
+- **Session 010** — ArcGIS / OZP commercial zoning. 590 C+CDA features, 499-piece MultiPolygon.
+- **Session 010b** — SLSQP buffer-smoothness fix. Exit mode 0 in 16 iters.
+- **Session 011** — k-median network + Voronoi. Lloyd + Weiszfeld, k=5. 59.1% reduction.
+- **Session 012** — Constrained k-median. +1.0% OZP penalty. 9 local minima. MATH.md extracted.
+- **Inter-session 2026-05-22** — Strategic pivot. ROADMAP.md shipped. Primary goal: pitching experience.
+- **Session 013** — k-sweep k∈{3,5,8,10,15,20}. Elbow at k≈8–10.
+- **Session 014** — FastAPI + Docker. API package, Dockerfile, security hardening. Local validation.
+- **Session 015** — Cloud Run deploy. Live at `https://optiloc-api-809774362984.asia-east2.run.app`.
+- **Session 016** — Road-network distance integration. Files 21–23. Road Weber: 2.33 km shift. Road k-median: 5,852 m/resident (54.4% reduction). File-16 lazy-load refactor. scikit-learn added.
 
 ---
 
@@ -389,29 +353,30 @@ This is the Phase 1 DM artifact. Anyone Kaito cold-messages can hit the URL righ
 - **Terminal commands** → ONE step at a time, wait for "done" or error.
 - **New math concept** → use the math-concept-tutor skill at `/mnt/skills/user/math-concept-tutor/SKILL.md`.
 - **Empirical findings that contradict textbook predictions** → treat as the more interesting result.
-- **Optimizer non-convergence or surprising results** → don't smooth them over; visualize, diagnose, and document the failure mode.
 - **Real-world deployment-relevant result shipped** → translate math finding into deployment terms. Add "Real-world meaning of the output" to journal entry.
 - **Math grounding needed mid-session** → `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/MATH.md
 - **Business/product grounding needed mid-session** → `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/ROADMAP.md
-- **Kaito ready to do customer outreach** → draft personalized DM script for the persona. He's willing to send DMs anytime.
 - **Security checklist or security question** → goal is proportional security, not maximal. Cut items wrong for the current phase.
+- **Context.md update requested** → always generate as a downloadable file, not inline text.
 
 ---
 
 ## Files NOT in Git but referenced
 
 - `data/raw/hkg_ppp_2020_UNadj_constrained.tif` — WorldPop GeoTIFF
-- `data/processed/*.csv` — all generated outputs (gitignored, regenerable)
-- `data/processed/ozp_all_zones.geojson` — ~120 MB cached ArcGIS response (gitignored)
-- `data/processed/ozp_commercial_union.geojson` — ~1.27 MB (gitignored locally; **baked into Docker image**)
-- `data/processed/demand_points.csv` — ~1 MB (gitignored locally; **baked into Docker image**)
-- `docs/maps/*.html` — generated maps (gitignored, regenerable)
-- `cache/*.json` — osmnx cache (gitignored)
+- `data/processed/*.csv` — generated outputs (gitignored, regenerable)
+- `data/processed/ozp_all_zones.geojson` — ~120 MB (gitignored)
+- `data/processed/ozp_commercial_union.geojson` — ~1.27 MB (baked into Docker image)
+- `data/processed/demand_points.csv` — ~1 MB (baked into Docker image)
+- `data/processed/hk_road_network.graphml` — cached osmnx graph (gitignored)
+- `data/processed/demand_points_road.csv` — snapped demand points (gitignored)
+- `data/processed/demand_nodes_aggregated.csv` — 12,513 unique nodes (gitignored)
+- `docs/maps/*.html` — generated maps (gitignored)
 - `.venv/` — Python virtual environment (gitignored)
-- Docker image `optiloc-hk:dev` — in Docker Desktop locally; pushed to Artifact Registry as `v0.1.0`
+- Docker image `optiloc-hk:dev` — local; pushed to Artifact Registry as `v0.1.0`
 
-Files IN Git: README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, docs/ROADMAP.md, requirements.txt, .gitignore, LICENSE, all `notebooks/*.py` (01–20), thirteen committed screenshots in `docs/maps/*.png`, data/raw/.gitkeep, data/processed/.gitkeep, `api/__init__.py`, `api/config.py`, `api/models.py`, `api/solvers.py`, `api/main.py`, `api/requirements.txt`, `.dockerignore`, `Dockerfile`.
+Files IN Git: README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, docs/ROADMAP.md, requirements.txt, .gitignore, LICENSE, all `notebooks/*.py` (01–23), thirteen committed screenshots in `docs/maps/*.png`, data/raw/.gitkeep, data/processed/.gitkeep, `api/__init__.py`, `api/config.py`, `api/models.py`, `api/solvers.py`, `api/main.py`, `api/requirements.txt`, `.dockerignore`, `Dockerfile`.
 
 ---
 
-*Last updated: end of Session 015 (May 23, 2026). Cloud Run deploy shipped. API live at `https://optiloc-api-809774362984.asia-east2.run.app`. Session 016 (road-network distance integration) is next per ROADMAP Phase 1. Update this file at the end of every session that meaningfully changes project state.*
+*Last updated: end of Session 016 (May 23, 2026). Road-network distance integration shipped. Session 017 (Cloud Build CI/CD) is next per ROADMAP Phase 1. Update this file at the end of every session that meaningfully changes project state.*
