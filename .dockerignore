@@ -1,0 +1,41 @@
+﻿# Version control
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# OS / editor
+.DS_Store
+*.swp
+.vscode
+.idea
+
+# Docker meta (don't ship into context)
+Dockerfile
+.dockerignore
+
+# Data — allow-list only what the API needs at runtime
+data/raw/
+data/processed/*
+!data/processed/demand_points.csv
+!data/processed/ozp_commercial_union.geojson
+
+# Files irrelevant to runtime
+docs/
+README.md
+JOURNAL.md
+CONTEXT.md
+LICENSE
+requirements.txt
+cache/
