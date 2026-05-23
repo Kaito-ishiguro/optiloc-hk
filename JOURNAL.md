@@ -581,6 +581,29 @@ Longer than expected due to the missing-files debugging loop, but the pipeline i
 Every `git push` to main now triggers a full build and deploy automatically. No more manual `docker build` → `docker push` → `gcloud run deploy` sequence. From this point forward, shipping a code change is a single `git push`. That's production-grade DevOps workflow for a student portfolio project — exactly the kind of thing that impresses engineering interviewers.
 
 ---
+## Session 018 — 2026-05-23 — Landing page live
+
+**What I built / learned**
+- Built `frontend/index.html` — single-page landing with hero, stats bar, 3-chart showcase, math writeup, and Formspree audit request form
+- Wired Formspree endpoint (`xdajdarn`) for zero-backend form handling with async JS submit feedback
+- Updated `api/main.py`: moved Swagger to `/api/docs`, added `GET /` → `FileResponse("frontend/index.html")`
+- Updated `Dockerfile` to `COPY frontend /app/frontend`; CI/CD auto-deployed via Cloud Build
+
+**Key insight or aha moment**
+The landing page and API live in the same Cloud Run container — one URL, one deploy. Moving Swagger from `/docs` to `/api/docs` was the only structural change needed to free up `/` for the page. Formspree handles form submissions entirely outside GCP with zero backend code.
+
+**What I got stuck on**
+Nothing major. Image filenames needed a `ls docs/maps/` check before wiring — confirmed `08_ksweep_diminishing_returns.png`, `four_solvers_wide.png`, `kmedian_ozp_map_wide.png`.
+
+**Next session's first move**
+Send the live URL to Prof. Kuo as a Phase 1 follow-up (Phase 1 exit criteria: Prof. Kuo email). Then begin Phase 2 scoping: capacitated p-median or target list building.
+
+**Time spent / mood**
+Clean session. Everything deployed first try after CI/CD was already in place from Session 017.
+
+**Real-world meaning of the output**
+OptiLoc HK now has a public face. Any ops director who receives the URL lands on a page that shows real HK data, real math results, and a clear ask — without needing to read a GitHub repo.
+
 ---
 ---
 ---
