@@ -17,6 +17,7 @@ RUN python -m pip install --no-cache-dir -r api/requirements.txt
 COPY api /app/api
 COPY notebooks/08_solve_weber_weiszfeld.py /app/notebooks/08_solve_weber_weiszfeld.py
 COPY notebooks/16_solve_kmedian_ozp.py /app/notebooks/16_solve_kmedian_ozp.py
+COPY frontend ./frontend
 
 # Bake in HK demand + commercial-zone geometry (public WorldPop + Lands Dept data; no PII).
 COPY data/processed/demand_points.csv /app/data/processed/demand_points.csv

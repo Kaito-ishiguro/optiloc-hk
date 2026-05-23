@@ -27,6 +27,7 @@ from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from fastapi.responses import FileResponse
 
 from api import __version__
 from api.config import (
@@ -71,7 +72,13 @@ app = FastAPI(
     ),
     version=__version__,
     lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
 )
+
+@app.get("/")
+async def landing_page():
+    return FileResponse("frontend/index.html")
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
