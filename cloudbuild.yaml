@@ -22,6 +22,7 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --max-instances=3
+      - --port=8000
 
 options:
   logging: CLOUD_LOGGING_ONLY
