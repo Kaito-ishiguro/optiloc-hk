@@ -10,13 +10,21 @@ OptiLoc HK is a Hong Kong facility location optimizer being built by **Kaito Ish
 
 **https://github.com/Kaito-ishiguro/optiloc-hk**
 
-**Current phase:** Phase 1 complete. Sessions 001–020 done. **Session 020 shipped: road-network solvers wired into API. Both `/solve_weber_road` and `/solve_kmedian_road` are live.** Live URL: `https://optiloc-api-809774362984.asia-east2.run.app`. Landing page at `/`, Swagger at `/api/docs`.
+**Current phase:** Phase 1 complete. Sessions 001–021 done. **Session 021 was a strategic brainstorm session: four Perplexity research outputs triaged, Phase 1.5 backlog committed to `docs/ROADMAP.md` with structured NOW/FUTURE lists.** All four solver endpoints live at `https://optiloc-api-809774362984.asia-east2.run.app`. Landing page at `/`, Swagger at `/api/docs`.
 
 **Money target: $3,000–8,000 USD by December 2026.** First paid pilot. One company.
 
 **FWD Group internship starts June 8, 2026.** ~14 days away.
 
-**The immediate task at the start of the next chat: Session 021 — brainstorm with Opus. Kaito has new ideas for tools, APIs, and services to enhance the product. Pure ideation session, no building.**
+**The immediate task at the start of the next chat: Session 022 — public/private repo split (~30 min precondition), then DATA.GOV.HK EV charger ingest pipeline, then baseline-aware `POST /analyze_network` endpoint.**
+
+---
+
+## Standing rules (locked in Claude memory, applies to all sessions)
+
+- **Alert Kaito before any decision that involves money or recurring costs** — subscriptions, paid API tiers, software licenses, free trials that auto-convert to paid. Let him decide before proceeding. (Locked Session 021.)
+- **Never use em dashes in emails or any writing intended for external audiences** (DMs, emails, messages). Sounds AI-generated. Use commas, colons, or rewrite. Internal chat is fine.
+- **Model routing for OptiLoc sessions:** state briefly at session start. Opus for new math, algorithm design, solver logic, deep reasoning, brainstorming, strategic ideation. Sonnet for debugging, feature adds, HTML/CSS, CI/CD, journaling, business strategy.
 
 ---
 
@@ -52,7 +60,7 @@ Recommend YES if: chat has covered 2+ full sessions, major milestone just closed
 
 ### Step-by-step rhythm for terminal work
 
-**Give ONE step at a time and wait for him to reply "done" (or paste any errors) before giving the next step.** He uses Windows and hits platform-specific errors. Single-step rhythm only.
+**Give ONE step at a time and wait for him to reply "done" (or paste any errors) before giving the next step.** He uses Windows and hits platform-specific errors. Single-step rhythm only. **Verify file changes actually saved with `git status` after he says "done" — pasted-but-unsaved is a real failure mode.**
 
 ### Teaching style
 
@@ -96,11 +104,11 @@ Journal lives in `JOURNAL.md`. Commit messages: `Session NNN: <short description
 - Math: LaTeX inline (`$...$`) or display (`$$...$$`)
 - Be concise by default. Token efficiency matters
 - He uses VS Code as his editor
-- **Never use em dashes in emails, DMs, or any writing intended for external audiences.** Sounds AI-generated. Use commas, colons, or rewrite the sentence instead.
+- **Never use em dashes in emails, DMs, or any writing intended for external audiences.**
 
 ### Security posture
 
-Proportional security, not maximal. Phase 1 is a public portfolio asset. Skip items wrong for this stage.
+Proportional security, not maximal. Phase 1 was a public portfolio asset. Phase 1.5 onward (starting Session 022), sensitive docs move to private repo. Pricing, target lists, customer data, business strategy all go private. Code, technical docs, MATH.md stay public for portfolio.
 
 ---
 
@@ -118,32 +126,106 @@ Proportional security, not maximal. Phase 1 is a public portfolio asset. Skip it
 - **Studying for Google Cloud ACE certification.** GCP project: `ace-prep-496408`, region: `asia-east2`
 - **Primary goal:** gain repeatable experience pitching and connecting with operational decision-makers. **Enjoys cold outreach** — Claude should tell him when to send DMs
 - **Confident presenter and talker.** Not fully confident on technical deployment questions. Prepare him with the Technical FAQ cheat sheet before customer conversations.
-- **Warm contacts via tennis mentorship program:** one person at Cathay Pacific (pilot), one at HKIA. Reach out at next tennis session (next week from Session 019).
-
-### Model routing (OptiLoc sessions)
-
-- **Opus:** new math, algorithm design, solver logic, deep reasoning, brainstorming, strategic ideation
-- **Sonnet:** debugging, feature adds, HTML/CSS, CI/CD, journaling, business strategy
-
-State briefly at session start, e.g. "Sonnet is fine" or "Use Opus for this."
+- **Warm contacts via tennis mentorship program:** one person at Cathay Pacific (pilot), one at HKIA. Reach out at next tennis session.
 
 ---
 
 ## The project at a glance
 
-OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (population 7,496,988) → solves Weber and k-median facility-location variants → visualizes as Folium maps or matplotlib galleries. Solvers exposed over HTTP via containerized FastAPI, live on Cloud Run. Every push to main auto-deploys via Cloud Build. Landing page live at `/`, Swagger at `/api/docs`.
+OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (population 7,496,988) → solves Weber and k-median facility-location variants → visualizes as Folium maps or matplotlib galleries. Solvers exposed over HTTP via containerized FastAPI, live on Cloud Run. Every push to main auto-deploys via Cloud Build. Landing page at `/`, Swagger at `/api/docs`.
 
-**All four solver endpoints are now live:**
+**All four solver endpoints live:**
 - `POST /solve_weber` — Euclidean Weber (Weiszfeld). Optimum: Sham Shui Po.
 - `POST /solve_kmedian_ozp` — Euclidean k-median with OZP commercial constraint.
-- `POST /solve_weber_road` — Road-network Weber (local search on graph). Optimum: (22.3246, 114.1887), 2.33 km SE of Euclidean. ~38s on Cloud Run.
-- `POST /solve_kmedian_road` — Road-network k-median (Lloyd's algorithm). ~4s for k=2.
+- `POST /solve_weber_road` — Road-network Weber (local search). Optimum: (22.3246, 114.1887), 2.33 km SE of Euclidean. ~38s on Cloud Run.
+- `POST /solve_kmedian_road` — Road-network k-median (Lloyd's). ~4s for k=2.
 
-**The critical gap from Session 019 is closed.**
+**Phase 1.5 backlog (Session 021 brainstorm output) is committed to `docs/ROADMAP.md`.** See that file for the full NOW/FUTURE structured list. Summary below.
 
 ---
 
-## Business plan (consolidated Session 019)
+## Phase 1.5 backlog summary
+
+Full version lives in `docs/ROADMAP.md` under "Phase 1.5 Backlog — Session 021 Brainstorm Output."
+
+### NOW list (Sessions 022-024 + Phase 0 outreach)
+
+**Session 022 precondition — public/private repo split**
+Create private `optiloc-hk-private` repo for sensitive docs (CONTEXT, ROADMAP, JOURNAL, future PITCH_INTELLIGENCE, future audit deliverables, future customer data). Public repo keeps code, frontend, technical docs, MATH.md. Free (GitHub free tier). ~30 min setup. Aligns with existing roadmap plan for `optiloc-core` (public) + `optiloc-app` (private), executed earlier than originally scoped.
+
+**Product / code work (Sessions 022-023)**
+1. DATA.GOV.HK EV chargers ingest pipeline — enables coverage-gap pitch for EV operators
+2. DATA.GOV.HK building footprints ingest pipeline — upgrade from OZP zone constraint to actual leasable buildings
+3. **Baseline-aware solver mode** (`POST /analyze_network`) — accepts existing facility locations, returns baseline objective + optimal objective + improvement delta + gap geojson + recommended locations. **The killer feature for first-pilot conversion** because it quantifies value in dollar or percent terms.
+
+**Outreach infrastructure (before June 8)**
+4. Google Sheet CRM (7 columns: Name, Company, Channel, Status, Last Touch, Next Action, Notes)
+5. Calendly Free (or Google Calendar appointment schedules)
+6. Calendar reminders tied to Next Action column
+7. Google Meet + Gemini for transcription (verify Gemini Pro subscription covers it); Fireflies Free as fallback
+8. Manual LinkedIn research + Notion/Docs template for personalized openers
+
+**Documentation work**
+9. SCQA framework adoption (Situation, Complication, Question, Answer) for DMs and audit reports
+10. Draft `docs/PITCH_INTELLIGENCE.md` with LegCo-sourced defensible stats, citation discipline, forbidden claims list, pre-written discovery call openers — 1-2 hours focused work, dedicated session
+
+**Pitch assets**
+11. Kepler.gl visuals for landing page refresh (external tool only, no integration)
+12. Commit Kepler.gl JSON configs to `docs/visualizations/kepler_configs/` for reproducibility
+
+### FUTURE list (revisit per stage, never proactively)
+
+⚠️ flags below indicate items that cost money or auto-convert to paid. Alert Kaito before adopting any of these per standing rule.
+
+- Stadia Maps drive-time API ⚠️
+- openrouteservice self-hosted backup (free)
+- Felt Enterprise ⚠️
+- Mapbox Studio + GL JS ⚠️
+- deck.gl / pydeck (free)
+- HK Lands Department 3D building data (free)
+- HubSpot Free (when 50+ conversations) — free but with persistent upgrade prompts
+- Sales Navigator 1-month trial ⚠️ ($80/mo if not canceled)
+- Fireflies paid tier ⚠️
+- Clay ⚠️
+- Quarto for PDF reports (free)
+- Pitch or Gamma for executive deck ⚠️
+- Self-hosted client portal (mostly hosting cost)
+- Customer-supplied demand data ingest pipeline (when audit #1 starts)
+
+**Intelligence gaps to fill:**
+- HK Climate Action Plan 2050 EV targets (EPD source)
+- HK total registered vehicle count for EV penetration ratio
+- EV registration growth rate year-over-year
+- HK Census commercial vehicle data by district
+- Model's first published coverage-gap stat (after EV chargers ingested)
+
+---
+
+## Pitch intelligence (defensible HK stats — Session 021 findings)
+
+**EV market (LegCo-sourced, defensible):**
+- ~105,000 registered EVs in HK (Oct 2024)
+- ~9,100 public charging facilities total (Sep 2024)
+- ~1,500 quick/fast chargers
+- 6,600+ private sector + 2,550 government-managed
+- **70:1 EV-to-fast-charger ratio** — the killer headline stat for EV operator pitches
+
+**Logistics market (Fuuffy/FreightAmigo, secondary, use with verbal caveat):**
+- HKD 20-50 base parcel pricing
+- HKD 60-150 same-day delivery
+- HKD 30-50 outlying islands premium
+- Named operators: SF Express, HK Post, ZTO, Jumppoint, Lalamove, J&T
+
+**Do NOT quote without verification:**
+- District-level parcel volumes (no public source exists)
+- Citywide EV penetration target (needs EPD policy doc verification)
+- Exact last-mile cost elasticity
+
+A dedicated `docs/PITCH_INTELLIGENCE.md` is planned for a focused future session to formalize this material.
+
+---
+
+## Business plan (consolidated Session 019, validated Session 021)
 
 ### Money target
 
@@ -162,8 +244,8 @@ OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (po
 
 ### Phase 0 — Pre-Internship Sprint (ACTIVE — ~14 days left)
 
-- Send Prof. Kuo follow-up email (drafted in Session 019, ready to send)
-- Update LinkedIn (DONE in Session 019)
+- Send Prof. Kuo follow-up email (drafted Session 019, ready to send)
+- LinkedIn updated (DONE Session 019)
 - Reach out to Cathay Pacific + HKIA warm contacts at next tennis session
 - Build target list of 20 HK companies (EV charging first)
 - Send 20 LinkedIn DMs using outcome-first language
@@ -215,28 +297,21 @@ OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (po
 
 ---
 
-## Session 021 plan (next session)
+## Session 022 plan (next session)
 
-**This is a pure brainstorm session with Opus. No building.**
+**Precondition: public/private repo split (~30 min)**
+1. Create `optiloc-hk-private` repo on GitHub (free tier — verify before creating, no payment expected)
+2. Move CONTEXT.md, ROADMAP.md, JOURNAL.md to private repo
+3. Drop the `web_fetch ROADMAP.md` trigger from this CONTEXT.md (since ROADMAP becomes private); Project knowledge becomes canonical store
+4. Update README in both repos to clarify their roles
+5. Push to both repos
 
-Kaito has new ideas for tools, APIs, services, or features to enhance OptiLoc. The session goal is to evaluate each idea honestly: is it worth building, does it move the money target forward, is it the right phase to build it?
+**Then product work:**
+1. **DATA.GOV.HK EV charger ingest (notebook 24):** download charger locations from https://data.gov.hk/en-data/dataset/hk-epd-evcpateam-evc-1, transform to GeoPandas, save as `data/processed/ev_chargers.geojson`. Public dataset, monthly updates. Free.
+2. **Baseline-aware endpoint scaffold:** create `POST /analyze_network` route that accepts `{existing_locations: [(lat, lon), ...], k: int}` and returns `{baseline_obj, optimal_obj, improvement_pct, gap_geojson, recommended_locations}`. Reuses existing `solve_kmedian_road` math.
+3. Test endpoint locally with public EV chargers as input (zero-customer use case: demonstrates coverage gaps in HK's existing public charger network).
 
-After ideation, the backlog of remaining product work includes:
-
-**Priority 1 — Map output endpoint**
-- New endpoint returning interactive Folium map HTML
-- Customer inputs k, gets back a map with hub locations, catchment areas, road distances
-- This is what the demo video will record
-
-**Priority 2 — Retake visuals**
-- Use f4map.com (free, 3D HK with buildings + traffic) for background screenshots
-- Use city-roads (anvaka.github.io/city-roads) for HK road network SVG
-- Clean screenshots for LinkedIn service page, landing page, audit report template
-
-**Priority 3 — Demo video (Session 022)**
-- 90-second Loom recording of live product
-- Edit in Canva (free)
-- Upload to LinkedIn service page and landing page
+Estimated: 1-2 sessions for full Session 022 scope. **Use Sonnet** for this — it's feature add and ingest work, not new math.
 
 ---
 
@@ -262,16 +337,18 @@ After ideation, the backlog of remaining product work includes:
 
 ---
 
-## Useful visual tools (identified Session 019)
+## Useful visual tools (Session 021 verdict)
 
-For demo visuals and landing page — use these in Session 022:
+**Active (NOW):**
+- **Kepler.gl** (free, external tool, no API integration) — primary tool for landing page screenshots and Loom demo visuals. Drag-and-drop CSV/GeoJSON, saves map state JSON for reproducibility.
 
-- **f4map.com** (free) — Interactive 3D HK map with buildings and traffic. Best for screenshots.
-- **city-roads (anvaka.github.io/city-roads)** (free) — Renders HK road network as clean SVG. Use on landing page.
-- **Cityweft (app.cityweft.com)** (freemium) — 3D city model with export options.
-- **topoexport.com** (freemium) — Clean 2D/3D vector map export. Good for audit report backgrounds.
-- **Figma** (freemium) — UI mockups and presentation design.
-- **Napkin AI (napkin.ai)** (freemium) — Text to diagrams. Good for methodology explainers.
+**On the radar (FUTURE):**
+- **f4map.com** (free) — 3D HK background screenshots
+- **city-roads (anvaka.github.io/city-roads)** (free) — HK road network SVG for landing page
+- **Mapbox Studio + GL JS** ⚠️ — post-pilot brand polish
+- **deck.gl / pydeck** (free) — when map endpoint outgrows Folium
+- **Figma** (freemium) — UI mockups if needed
+- **Napkin AI** (freemium) — text-to-diagram for methodology explainers
 
 ---
 
@@ -280,9 +357,9 @@ For demo visuals and landing page — use these in Session 022:
 ### Frontend (Session 018)
 
 #### `frontend/index.html`
-Single-page landing. Dark navy aesthetic, Syne + DM Sans fonts, teal accent. Sections: nav, hero (animated live-API badge), stats bar (41,288 / 7.5M / 59.1% / 5,852m), 3-chart showcase (GitHub raw image URLs), how-it-works pipeline, math writeup, Formspree audit form. Formspree endpoint: `https://formspree.io/f/xdajdarn`. Images: `08_ksweep_diminishing_returns.png`, `four_solvers_wide.png`, `kmedian_ozp_map_wide.png` — all served from `raw.githubusercontent.com`.
+Single-page landing. Dark navy aesthetic, Syne + DM Sans fonts, teal accent. Sections: nav, hero (animated live-API badge), stats bar (41,288 / 7.5M / 59.1% / 5,852m), 3-chart showcase (GitHub raw image URLs), how-it-works pipeline, math writeup, Formspree audit form. Formspree endpoint: `https://formspree.io/f/xdajdarn`. Images served from `raw.githubusercontent.com`.
 
-**Visual debt:** Screenshots on landing page are notebook outputs, not presentation quality. Fix in Session 022 after map endpoint is built.
+**Visual debt:** Screenshots are notebook outputs, not presentation quality. Fix in Session 023 with Kepler.gl.
 
 ### CI/CD layer (Sessions 017, updated 020)
 
@@ -298,7 +375,7 @@ Region: asia-east2. Event: push to `^main$`. Ignored files: `README.md,JOURNAL.m
 ### API + container layer (Sessions 014-015, updated 018, 020)
 
 #### `api/main.py`
-FastAPI app. `docs_url="/api/docs"`, `redoc_url="/api/redoc"`. Endpoints: `GET /` (landing page), `GET /healthz`, `POST /solve_weber`, `POST /solve_kmedian_ozp`, `POST /solve_weber_road`, `POST /solve_kmedian_road`.
+FastAPI app. `docs_url="/api/docs"`, `redoc_url="/api/redoc"`. Endpoints: `GET /` (landing page), `GET /healthz`, `POST /solve_weber`, `POST /solve_kmedian_ozp`, `POST /solve_weber_road`, `POST /solve_kmedian_road`. **Session 022 adds:** `POST /analyze_network`.
 
 #### `api/solvers.py`
 Loads files 08 and 16 via importlib for Euclidean solvers. Road-network solvers inlined directly. Caches all data at startup: demand points, OZP geometry, road graph (undirected + directed), aggregated demand nodes. Road graph loaded via `ox.load_graphml()`, converted to undirected for Dijkstra.
@@ -307,9 +384,9 @@ Loads files 08 and 16 via importlib for Euclidean solvers. Road-network solvers 
 `MAX_K=25`, `MAX_RESTARTS=20`. Rate limit: `5/minute`. Timeouts: Weber 30s, k-median 180s, road Weber 120s, road k-median 300s. Road paths: `ROAD_GRAPH_ML`, `ROAD_AGG_CSV`. `ROAD_KMEDIAN_MAX_ITERS=15`.
 
 #### `api/requirements.txt`
-Added Session 020: `osmnx==2.1.0`, `networkx==3.6.1`, `scikit-learn==1.8.0`.
+Includes (Session 020): `osmnx==2.1.0`, `networkx==3.6.1`, `scikit-learn==1.8.0`.
 
-### Notebooks (01–23)
+### Notebooks (01–23, with 24 planned)
 
 - **01** — WorldPop ingest → `demand_points.csv` (41,288 points)
 - **02** — HK population heatmap
@@ -335,6 +412,7 @@ Added Session 020: `osmnx==2.1.0`, `networkx==3.6.1`, `scikit-learn==1.8.0`.
 - **21** — Road network prep. HK driving network (18,820 nodes, 35,848 edges).
 - **22** — Road-network Weber. Optimum: node 1651827916, (22.32462, 114.18873), 2.33 km SE of Euclidean.
 - **23** — Road k-median (k=5). Best: 5,852 m/resident, 54.4% reduction.
+- **24 (planned Session 022)** — DATA.GOV.HK EV charger ingest
 
 ---
 
@@ -344,14 +422,14 @@ Added Session 020: `osmnx==2.1.0`, `networkx==3.6.1`, `scikit-learn==1.8.0`.
 - **Env:** `.venv/`, activate via `.venv\Scripts\Activate.ps1`
 - **Numerical:** NumPy, SciPy (BFGS, SLSQP)
 - **Geographic:** rasterio, osmnx 2.1.0, shapely, GeoPandas, pyogrio, pyproj, scikit-learn 1.8.0
-- **Visualization:** Folium, matplotlib
+- **Visualization:** Folium, matplotlib, Kepler.gl (external)
 - **API:** FastAPI 0.136.1 + Uvicorn 0.47.0 + Pydantic 2.13.4 + slowapi 0.1.9
 - **Frontend:** Static HTML/CSS/JS. Syne + DM Sans (Google Fonts). Formspree for form handling.
 - **Container:** Docker Desktop 4.67.0, `python:3.14-slim`, linux/amd64
 - **Cloud:** GCP `ace-prep-496408`, `asia-east2`. Artifact Registry `optiloc`. Cloud Run `optiloc-api`. URL: `https://optiloc-api-809774362984.asia-east2.run.app`
 - **CI/CD:** Cloud Build trigger `deploy-on-push`, SA `cloudbuild-deployer`
 - **Storage:** GCS bucket `gs://optiloc-assets-ace-prep-496408` (road graph asset)
-- **VCS:** Git, GitHub `github.com/Kaito-ishiguro/optiloc-hk`
+- **VCS:** Git, GitHub `github.com/Kaito-ishiguro/optiloc-hk` (public). Private repo `optiloc-hk-private` planned for Session 022.
 
 ---
 
@@ -368,31 +446,39 @@ Added Session 020: `osmnx==2.1.0`, `networkx==3.6.1`, `scikit-learn==1.8.0`.
 - Docker Desktop must be running for docker commands
 - LF→CRLF warnings from Git are harmless
 - VS Code is his editor — he creates files there rather than via PowerShell when possible
+- **After paste-and-save, verify with `git status` before issuing add/commit** — there's a real failure mode where pastes don't actually save
 
 ---
 
 ## Where we are right now
 
-**Session 020 complete. All four solver endpoints live.**
+**Session 021 complete. Phase 1.5 backlog committed to ROADMAP.md.**
 
-**Done:**
-- Landing page live at `https://optiloc-api-809774362984.asia-east2.run.app`
-- Swagger at `/api/docs`
-- Formspree audit form live
-- Road-network solvers live: `/solve_weber_road` and `/solve_kmedian_road`
-- GCS asset pipeline for graphml (24 MB, not in git)
-- Cloud Run memory bumped to 2 GiB
-- CI/CD auto-deploy on push to main
-- ROADMAP v2 committed
-- LinkedIn fully rebuilt
-- Prof. Kuo follow-up email drafted (ready to send)
-- Business plan: money target set, Phase 0 outreach plan defined
+**Done in Session 021:**
+- Four Perplexity research outputs triaged through NOW/FUTURE framework
+- Phase 1.5 backlog committed to `docs/ROADMAP.md`
+- New killer feature scoped: baseline-aware solver mode (`POST /analyze_network`)
+- Public/private repo split decision made (executes Session 022)
+- SCQA framework adopted for DMs and audit reports
+- Pitch intelligence stats surfaced (70:1 EV-to-fast-charger ratio is the headline)
+- Standing money-alert rule locked into Claude memory
+- All four prior Perplexity prompts run; no more generic prompts needed
+
+**Already done before Session 021:**
+- Landing page live
+- All four solver endpoints live
+- CI/CD auto-deploy
+- ROADMAP v2 committed (Session 019)
+- LinkedIn rebuilt (Session 019)
+- Prof. Kuo follow-up email drafted (Session 019, ready to send)
+- Road-network solvers live in API (Session 020)
+- GCS asset pipeline (Session 020)
 
 **Next up:**
-1. Session 021: brainstorm new ideas with Opus (Kaito has suggestions)
-2. Session 022: map output endpoint + retake visuals
-3. Session 023: demo video
-4. Phase 0 outreach: send Prof. Kuo email, warm contacts at tennis, 20 LinkedIn DMs before June 8
+1. Session 022: repo split → DATA.GOV.HK EV chargers ingest → baseline-aware endpoint scaffold
+2. Phase 0 outreach: send Prof. Kuo email, warm contacts at tennis, 20 LinkedIn DMs before June 8
+3. Session 023: building footprints ingest, Kepler.gl visuals, demo video
+4. Dedicated future session: draft `docs/PITCH_INTELLIGENCE.md`
 
 ---
 
@@ -420,12 +506,13 @@ Added Session 020: `osmnx==2.1.0`, `networkx==3.6.1`, `scikit-learn==1.8.0`.
 - **018** — Landing page v1. Phase 1 complete.
 - **019** — Business plan consolidated. ROADMAP v2. LinkedIn rebuilt. Critical gap found: road-network not in API.
 - **020** — Road-network solvers wired into API. GCS asset pipeline. 2 GiB Cloud Run memory. All 4 endpoints live.
+- **021** — Brainstorm session. Four Perplexity prompts triaged. Phase 1.5 backlog committed to ROADMAP.md. Killer feature scoped: baseline-aware solver mode. Public/private repo split decision. SCQA framework adopted. Standing money-alert rule locked into Claude memory.
 
 ---
 
-## Files in Git (after Session 020)
+## Files in Git (after Session 021)
 
-README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, **docs/ROADMAP.md (v2)**, requirements.txt, .gitignore, LICENSE, cloudbuild.yaml, notebooks/01-23, docs/maps/*.png (13 screenshots), data/raw/.gitkeep, data/processed/.gitkeep, **data/processed/demand_points.csv**, **data/processed/ozp_commercial_union.geojson**, **data/processed/demand_nodes_aggregated.csv**, api/__init__.py, api/config.py, api/models.py, api/solvers.py, api/main.py, api/requirements.txt, .dockerignore, Dockerfile, **frontend/index.html**.
+README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, **docs/ROADMAP.md (v2 + Phase 1.5 backlog appended Session 021)**, requirements.txt, .gitignore, LICENSE, cloudbuild.yaml, notebooks/01-23, docs/maps/*.png, data/raw/.gitkeep, data/processed/.gitkeep, data/processed/demand_points.csv, data/processed/ozp_commercial_union.geojson, data/processed/demand_nodes_aggregated.csv, api/__init__.py, api/config.py, api/models.py, api/solvers.py, api/main.py, api/requirements.txt, .dockerignore, Dockerfile, frontend/index.html.
 
 ## Files NOT in Git
 
@@ -443,14 +530,15 @@ README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, **docs/ROADMAP.md (v2)**, requi
 - **"wrap up this session"** / **"log this"** → journal entry in code block + chat-switch question
 - **"let's start session NNN"** → proceed directly into work
 - **"don't include this in the file but tell me..."** → thorough technical debrief outside journal
-- **Terminal commands** → ONE step at a time
+- **Terminal commands** → ONE step at a time; verify with `git status` after paste-and-save
 - **New math concept** → math-concept-tutor skill
 - **Math grounding** → `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/MATH.md
-- **Business grounding** → `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/ROADMAP.md
+- **Business grounding** → `web_fetch` https://raw.githubusercontent.com/Kaito-ishiguro/optiloc-hk/main/docs/ROADMAP.md *(NOTE: this trigger expires after Session 022 repo split. Once ROADMAP moves to private repo, Project knowledge is the canonical store and web_fetch will return 404)*
 - **Security question** → proportional security, not maximal
 - **CONTEXT.md update** → always generate as downloadable file
 - **Tool suggestions from Kaito** → accept if useful for OptiLoc demo/product/customer work; reject fitness, crafting, games, pure aesthetic design
+- **Any decision involving money or recurring costs** → ALERT Kaito and wait for his decision before proceeding (locked in Claude memory)
 
 ---
 
-*Last updated: end of Session 020 (May 24, 2026). All four solver endpoints live. Road-network gap closed. Session 021 is a brainstorm session with Opus.*
+*Last updated: end of Session 021 (May 24, 2026). Phase 1.5 backlog committed to ROADMAP.md. Standing money-alert rule locked in Claude memory. Session 022 starts with public/private repo split as precondition, then DATA.GOV.HK EV charger ingest and baseline-aware endpoint.*
