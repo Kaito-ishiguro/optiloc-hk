@@ -10,15 +10,13 @@ OptiLoc HK is a Hong Kong facility location optimizer being built by **Kaito Ish
 
 **https://github.com/Kaito-ishiguro/optiloc-hk**
 
-**Current phase:** Phase 1 complete. Sessions 001–019 done. **Session 019 shipped: ROADMAP v2 consolidated, LinkedIn rebuilt, business plan finalized.** Live URL: `https://optiloc-api-809774362984.asia-east2.run.app`. Landing page at `/`, Swagger at `/api/docs`.
-
-**Critical discovery from Session 019:** The live API only exposes Euclidean distance solvers. Road-network solvers exist in notebooks 21-23 but are NOT wired into any API endpoint. This must be fixed before any demo or customer outreach.
+**Current phase:** Phase 1 complete. Sessions 001–020 done. **Session 020 shipped: road-network solvers wired into API. Both `/solve_weber_road` and `/solve_kmedian_road` are live.** Live URL: `https://optiloc-api-809774362984.asia-east2.run.app`. Landing page at `/`, Swagger at `/api/docs`.
 
 **Money target: $3,000–8,000 USD by December 2026.** First paid pilot. One company.
 
-**FWD Group internship starts June 8, 2026.** 16 days from Session 019.
+**FWD Group internship starts June 8, 2026.** ~14 days away.
 
-**The immediate task at the start of the next chat: Session 020 — wire road-network solvers into the API and add a map output endpoint.**
+**The immediate task at the start of the next chat: Session 021 — brainstorm with Opus. Kaito has new ideas for tools, APIs, and services to enhance the product. Pure ideation session, no building.**
 
 ---
 
@@ -124,7 +122,7 @@ Proportional security, not maximal. Phase 1 is a public portfolio asset. Skip it
 
 ### Model routing (OptiLoc sessions)
 
-- **Opus:** new math, algorithm design, solver logic, deep reasoning
+- **Opus:** new math, algorithm design, solver logic, deep reasoning, brainstorming, strategic ideation
 - **Sonnet:** debugging, feature adds, HTML/CSS, CI/CD, journaling, business strategy
 
 State briefly at session start, e.g. "Sonnet is fine" or "Use Opus for this."
@@ -135,7 +133,13 @@ State briefly at session start, e.g. "Sonnet is fine" or "Use Opus for this."
 
 OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (population 7,496,988) → solves Weber and k-median facility-location variants → visualizes as Folium maps or matplotlib galleries. Solvers exposed over HTTP via containerized FastAPI, live on Cloud Run. Every push to main auto-deploys via Cloud Build. Landing page live at `/`, Swagger at `/api/docs`.
 
-**CRITICAL GAP (Session 019 discovery):** The live API only exposes Euclidean distance. Road-network solvers (notebooks 21-23) are built and working but not wired into any API endpoint. Fix this in Session 020 before any demo or customer outreach.
+**All four solver endpoints are now live:**
+- `POST /solve_weber` — Euclidean Weber (Weiszfeld). Optimum: Sham Shui Po.
+- `POST /solve_kmedian_ozp` — Euclidean k-median with OZP commercial constraint.
+- `POST /solve_weber_road` — Road-network Weber (local search on graph). Optimum: (22.3246, 114.1887), 2.33 km SE of Euclidean. ~38s on Cloud Run.
+- `POST /solve_kmedian_road` — Road-network k-median (Lloyd's algorithm). ~4s for k=2.
+
+**The critical gap from Session 019 is closed.**
 
 ---
 
@@ -156,7 +160,7 @@ OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (po
 | First invoice sent | Oct/Nov 2026 | It's a real business |
 | First invoice paid | Nov/Dec 2026 | **You made money** |
 
-### Phase 0 — Pre-Internship Sprint (ACTIVE — 16 days left)
+### Phase 0 — Pre-Internship Sprint (ACTIVE — ~14 days left)
 
 - Send Prof. Kuo follow-up email (drafted in Session 019, ready to send)
 - Update LinkedIn (DONE in Session 019)
@@ -211,24 +215,25 @@ OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (po
 
 ---
 
-## Session 020 plan (next session)
+## Session 021 plan (next session)
 
-**Priority 1 — Wire road-network solvers into API**
-- Add `POST /solve_weber_road` endpoint using notebook 21-22 logic
-- Add `POST /solve_kmedian_road` endpoint using notebook 23 logic
-- Both return coordinates using road-network distance, not Euclidean
+**This is a pure brainstorm session with Opus. No building.**
 
-**Priority 2 — Add map output endpoint**
-- New endpoint that returns an interactive Folium map HTML
+Kaito has new ideas for tools, APIs, services, or features to enhance OptiLoc. The session goal is to evaluate each idea honestly: is it worth building, does it move the money target forward, is it the right phase to build it?
+
+After ideation, the backlog of remaining product work includes:
+
+**Priority 1 — Map output endpoint**
+- New endpoint returning interactive Folium map HTML
 - Customer inputs k, gets back a map with hub locations, catchment areas, road distances
 - This is what the demo video will record
 
-**Priority 3 — Retake visuals (after map endpoint works)**
+**Priority 2 — Retake visuals**
 - Use f4map.com (free, 3D HK with buildings + traffic) for background screenshots
 - Use city-roads (anvaka.github.io/city-roads) for HK road network SVG
 - Clean screenshots for LinkedIn service page, landing page, audit report template
 
-**Priority 4 — Demo video (Session 021)**
+**Priority 3 — Demo video (Session 022)**
 - 90-second Loom recording of live product
 - Edit in Canva (free)
 - Upload to LinkedIn service page and landing page
@@ -259,7 +264,7 @@ OptiLoc's pipeline ingests WorldPop raster → 41,288 weighted demand points (po
 
 ## Useful visual tools (identified Session 019)
 
-For demo visuals and landing page — use these in Session 020-021:
+For demo visuals and landing page — use these in Session 022:
 
 - **f4map.com** (free) — Interactive 3D HK map with buildings and traffic. Best for screenshots.
 - **city-roads (anvaka.github.io/city-roads)** (free) — Renders HK road network as clean SVG. Use on landing page.
@@ -267,8 +272,6 @@ For demo visuals and landing page — use these in Session 020-021:
 - **topoexport.com** (freemium) — Clean 2D/3D vector map export. Good for audit report backgrounds.
 - **Figma** (freemium) — UI mockups and presentation design.
 - **Napkin AI (napkin.ai)** (freemium) — Text to diagrams. Good for methodology explainers.
-
-Kaito will continue suggesting tools. Accept if useful for OptiLoc demo/product/customer work. Reject everything else (fitness, crafting, games, pure aesthetic design).
 
 ---
 
@@ -279,26 +282,32 @@ Kaito will continue suggesting tools. Accept if useful for OptiLoc demo/product/
 #### `frontend/index.html`
 Single-page landing. Dark navy aesthetic, Syne + DM Sans fonts, teal accent. Sections: nav, hero (animated live-API badge), stats bar (41,288 / 7.5M / 59.1% / 5,852m), 3-chart showcase (GitHub raw image URLs), how-it-works pipeline, math writeup, Formspree audit form. Formspree endpoint: `https://formspree.io/f/xdajdarn`. Images: `08_ksweep_diminishing_returns.png`, `four_solvers_wide.png`, `kmedian_ozp_map_wide.png` — all served from `raw.githubusercontent.com`.
 
-**Visual debt:** Screenshots on landing page are notebook outputs, not presentation quality. Fix in Session 021 after map endpoint is built.
+**Visual debt:** Screenshots on landing page are notebook outputs, not presentation quality. Fix in Session 022 after map endpoint is built.
 
-### CI/CD layer (Session 017)
+### CI/CD layer (Sessions 017, updated 020)
 
 #### `cloudbuild.yaml`
-3-step pipeline: docker build → push to Artifact Registry → gcloud run deploy. Flags: `--max-instances=3`, `--port=8000`, `--allow-unauthenticated`, region `asia-east2`. Image tagged with `$COMMIT_SHA`.
+4-step pipeline: gsutil download graphml from GCS → docker build → push to Artifact Registry → gcloud run deploy. Flags: `--max-instances=3`, `--memory=2Gi`, `--port=8000`, `--allow-unauthenticated`, region `asia-east2`. Image tagged with `$COMMIT_SHA`.
+
+#### GCS bucket
+`gs://optiloc-assets-ace-prep-496408` in asia-east2. Stores `hk_road_network.graphml` (24 MB). Downloaded into build workspace before docker build. `cloudbuild-deployer` SA has `roles/storage.objectViewer`.
 
 #### Cloud Build trigger `deploy-on-push`
 Region: asia-east2. Event: push to `^main$`. Ignored files: `README.md,JOURNAL.md,CONTEXT.md,docs/**`. Config: `cloudbuild.yaml`. SA: `cloudbuild-deployer@ace-prep-496408.iam.gserviceaccount.com`.
 
-### API + container layer (Sessions 014-015, updated 018)
+### API + container layer (Sessions 014-015, updated 018, 020)
 
 #### `api/main.py`
-FastAPI app. `docs_url="/api/docs"`, `redoc_url="/api/redoc"`. Endpoints: `GET /` (landing page), `GET /healthz`, `POST /solve_weber`, `POST /solve_kmedian_ozp`. **BOTH use Euclidean distance — road-network not yet wired in.**
+FastAPI app. `docs_url="/api/docs"`, `redoc_url="/api/redoc"`. Endpoints: `GET /` (landing page), `GET /healthz`, `POST /solve_weber`, `POST /solve_kmedian_ozp`, `POST /solve_weber_road`, `POST /solve_kmedian_road`.
 
 #### `api/solvers.py`
-Loads files 08 and 16 via importlib. Caches graph + demand data at startup. File 16 geopandas import is lazy.
+Loads files 08 and 16 via importlib for Euclidean solvers. Road-network solvers inlined directly. Caches all data at startup: demand points, OZP geometry, road graph (undirected + directed), aggregated demand nodes. Road graph loaded via `ox.load_graphml()`, converted to undirected for Dijkstra.
 
 #### `api/config.py`
-`MAX_K=25`, `MAX_RESTARTS=20`. Rate limit: `5/minute`. Timeouts: Weber 30s, k-median 180s.
+`MAX_K=25`, `MAX_RESTARTS=20`. Rate limit: `5/minute`. Timeouts: Weber 30s, k-median 180s, road Weber 120s, road k-median 300s. Road paths: `ROAD_GRAPH_ML`, `ROAD_AGG_CSV`. `ROAD_KMEDIAN_MAX_ITERS=15`.
+
+#### `api/requirements.txt`
+Added Session 020: `osmnx==2.1.0`, `networkx==3.6.1`, `scikit-learn==1.8.0`.
 
 ### Notebooks (01–23)
 
@@ -323,9 +332,9 @@ Loads files 08 and 16 via importlib. Caches graph + demand data at startup. File
 - **18** — k-sweep k∈{3,5,8,10,15,20}. Elbow at k≈8-10
 - **19** — Diminishing-returns chart
 - **20** — 2×3 hub-location gallery
-- **21** — Road network prep. HK driving network (18,820 nodes, 35,848 edges). **NOT in API yet.**
-- **22** — Road-network Weber. Optimum: (22.32462, 114.18873), 2.33 km SE of Euclidean. **NOT in API yet.**
-- **23** — Road k-median (k=5). Best: 5,852 m/resident, 54.4% reduction. **NOT in API yet.**
+- **21** — Road network prep. HK driving network (18,820 nodes, 35,848 edges).
+- **22** — Road-network Weber. Optimum: node 1651827916, (22.32462, 114.18873), 2.33 km SE of Euclidean.
+- **23** — Road k-median (k=5). Best: 5,852 m/resident, 54.4% reduction.
 
 ---
 
@@ -341,6 +350,7 @@ Loads files 08 and 16 via importlib. Caches graph + demand data at startup. File
 - **Container:** Docker Desktop 4.67.0, `python:3.14-slim`, linux/amd64
 - **Cloud:** GCP `ace-prep-496408`, `asia-east2`. Artifact Registry `optiloc`. Cloud Run `optiloc-api`. URL: `https://optiloc-api-809774362984.asia-east2.run.app`
 - **CI/CD:** Cloud Build trigger `deploy-on-push`, SA `cloudbuild-deployer`
+- **Storage:** GCS bucket `gs://optiloc-assets-ace-prep-496408` (road graph asset)
 - **VCS:** Git, GitHub `github.com/Kaito-ishiguro/optiloc-hk`
 
 ---
@@ -363,25 +373,25 @@ Loads files 08 and 16 via importlib. Caches graph + demand data at startup. File
 
 ## Where we are right now
 
-**Session 019 complete. Phase 1 is complete. Business plan consolidated.**
+**Session 020 complete. All four solver endpoints live.**
 
 **Done:**
 - Landing page live at `https://optiloc-api-809774362984.asia-east2.run.app`
 - Swagger at `/api/docs`
 - Formspree audit form live
-- Road-network solvers built (notebooks 21-23) but NOT in API
+- Road-network solvers live: `/solve_weber_road` and `/solve_kmedian_road`
+- GCS asset pipeline for graphml (24 MB, not in git)
+- Cloud Run memory bumped to 2 GiB
 - CI/CD auto-deploy on push to main
 - ROADMAP v2 committed
 - LinkedIn fully rebuilt
 - Prof. Kuo follow-up email drafted (ready to send)
 - Business plan: money target set, Phase 0 outreach plan defined
 
-**Critical gap:** API serves only Euclidean distance. Road-network not exposed.
-
 **Next up:**
-1. Commit CONTEXT.md update (this file)
-2. Session 020: wire road-network solvers into API + map output endpoint
-3. Session 021: retake visuals + record demo video
+1. Session 021: brainstorm new ideas with Opus (Kaito has suggestions)
+2. Session 022: map output endpoint + retake visuals
+3. Session 023: demo video
 4. Phase 0 outreach: send Prof. Kuo email, warm contacts at tennis, 20 LinkedIn DMs before June 8
 
 ---
@@ -408,21 +418,21 @@ Loads files 08 and 16 via importlib. Caches graph + demand data at startup. File
 - **016** — Road-network solvers (notebooks 21-23). Road Weber: 2.33 km shift. Road k-median: 5,852 m/resident.
 - **017** — Cloud Build CI/CD. Auto-deploy on push to main.
 - **018** — Landing page v1. Phase 1 complete.
-- **019** — Business plan consolidated. ROADMAP v2. LinkedIn rebuilt. Critical gap found: road-network not in API. Demo video plan scoped.
+- **019** — Business plan consolidated. ROADMAP v2. LinkedIn rebuilt. Critical gap found: road-network not in API.
+- **020** — Road-network solvers wired into API. GCS asset pipeline. 2 GiB Cloud Run memory. All 4 endpoints live.
 
 ---
 
-## Files in Git (after Session 019)
+## Files in Git (after Session 020)
 
-README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, **docs/ROADMAP.md (v2)**, requirements.txt, .gitignore, LICENSE, cloudbuild.yaml, notebooks/01-23, docs/maps/*.png (13 screenshots), data/raw/.gitkeep, data/processed/.gitkeep, **data/processed/demand_points.csv**, **data/processed/ozp_commercial_union.geojson**, api/__init__.py, api/config.py, api/models.py, api/solvers.py, api/main.py, api/requirements.txt, .dockerignore, Dockerfile, **frontend/index.html**.
+README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, **docs/ROADMAP.md (v2)**, requirements.txt, .gitignore, LICENSE, cloudbuild.yaml, notebooks/01-23, docs/maps/*.png (13 screenshots), data/raw/.gitkeep, data/processed/.gitkeep, **data/processed/demand_points.csv**, **data/processed/ozp_commercial_union.geojson**, **data/processed/demand_nodes_aggregated.csv**, api/__init__.py, api/config.py, api/models.py, api/solvers.py, api/main.py, api/requirements.txt, .dockerignore, Dockerfile, **frontend/index.html**.
 
 ## Files NOT in Git
 
 - `data/raw/hkg_ppp_2020_UNadj_constrained.tif`
 - `data/processed/ozp_all_zones.geojson` (~120 MB)
-- `data/processed/hk_road_network.graphml`
+- `data/processed/hk_road_network.graphml` (24 MB — stored in GCS)
 - `data/processed/demand_points_road.csv`
-- `data/processed/demand_nodes_aggregated.csv`
 - `docs/maps/*.html`
 - `.venv/`
 
@@ -443,4 +453,4 @@ README.md, JOURNAL.md, CONTEXT.md, docs/MATH.md, **docs/ROADMAP.md (v2)**, requi
 
 ---
 
-*Last updated: end of Session 019 (May 24, 2026). Business plan consolidated. LinkedIn rebuilt. Critical API gap found. Session 020 starts with wiring road-network solvers into API endpoints.*
+*Last updated: end of Session 020 (May 24, 2026). All four solver endpoints live. Road-network gap closed. Session 021 is a brainstorm session with Opus.*
