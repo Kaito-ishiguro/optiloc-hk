@@ -29,12 +29,11 @@ COPY data/processed/demand_nodes_aggregated.csv /app/data/processed/demand_nodes
 RUN chown -R appuser:app /app
 USER appuser
 
-# Liveness probe. Cloud Run also probes /healthz at the platform level.
+# Liveness probe using $PORT so it matches whatever Cloud Run injects.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD python -c "import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3); sys.exit(0 if r.status==200 else 1)"
+    CMD sh -c "python -c \"import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:'+'${PORT:-8080}'+'/healthz',timeout=3); sys.exit(0 if r.status==200 else 1)\""
 
-EXPOSE 8000
+EXPOSE 8080
 
-# Cloud Run injects PORT; default to 8000 locally.
-ENV PORT=8000
+ENV PORT=8080
 CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT}"]
