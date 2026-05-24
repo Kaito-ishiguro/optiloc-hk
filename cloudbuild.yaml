@@ -22,6 +22,7 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --max-instances=3
+      - --memory=2Gi
       - --port=8000
 
 options:

@@ -19,6 +19,15 @@ OZP_GEOJSON = DATA_DIR / "ozp_commercial_union.geojson"
 WEBER_SOLVER_PATH = NOTEBOOKS_DIR / "08_solve_weber_weiszfeld.py"
 KMEDIAN_SOLVER_PATH = NOTEBOOKS_DIR / "16_solve_kmedian_ozp.py"
 
+# Road-network data assets baked into the container.
+ROAD_GRAPH_ML = DATA_DIR / "hk_road_network.graphml"
+ROAD_AGG_CSV  = DATA_DIR / "demand_nodes_aggregated.csv"
+
+# Road-network solver limits and timeouts.
+ROAD_WEBER_TIMEOUT_S   = 120
+ROAD_KMEDIAN_TIMEOUT_S = 300
+ROAD_KMEDIAN_MAX_ITERS = 15   # Lloyd iterations per restart (matches notebook 23).
+
 # ---- Security / DoS limits ----------------------------------------------------
 
 MAX_K = 25                # Largest k-median problem size we'll accept.

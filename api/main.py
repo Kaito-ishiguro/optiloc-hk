@@ -33,15 +33,20 @@ from api import __version__
 from api.config import (
     KMEDIAN_TIMEOUT_S,
     RATE_LIMIT_SOLVE,
+    ROAD_KMEDIAN_TIMEOUT_S,
+    ROAD_WEBER_TIMEOUT_S,
     WEBER_TIMEOUT_S,
 )
 from api.models import (
     HealthResponse,
     KMedianOZPRequest,
     KMedianOZPResponse,
+    KMedianRoadRequest,
+    KMedianRoadResponse,
     WeberResponse,
+    WeberRoadResponse,
 )
-from api.solvers import initialize_solvers, solve_kmedian_ozp, solve_weber
+from api.solvers import initialize_solvers, solve_kmedian_ozp, solve_kmedian_road, solve_weber, solve_weber_road
 
 logger = logging.getLogger("optiloc.api")
 logging.basicConfig(level=logging.INFO)
@@ -154,3 +159,45 @@ async def post_solve_kmedian_ozp(request: Request, body: KMedianOZPRequest):
             detail=f"k-median solver exceeded {KMEDIAN_TIMEOUT_S}s timeout.",
         )
     return KMedianOZPResponse(**result)
+
+
+@app.post(
+    "/solve_weber_road",
+    response_model=WeberRoadResponse,
+    tags=["optimize"],
+    summary="Solve the single-facility Weber problem using HK road-network distances.",
+)
+@limiter.limit(RATE_LIMIT_SOLVE)
+async def post_solve_weber_road(request: Request):
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(solve_weber_road),
+            timeout=ROAD_WEBER_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Road Weber solver exceeded {ROAD_WEBER_TIMEOUT_S}s timeout.",
+        )
+    return WeberRoadResponse(**result)
+
+
+@app.post(
+    "/solve_kmedian_road",
+    response_model=KMedianRoadResponse,
+    tags=["optimize"],
+    summary="Solve the k-median problem using HK road-network distances.",
+)
+@limiter.limit(RATE_LIMIT_SOLVE)
+async def post_solve_kmedian_road(request: Request, body: KMedianRoadRequest):
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(solve_kmedian_road, body.k, body.n_restarts),
+            timeout=ROAD_KMEDIAN_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Road k-median solver exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
+        )
+    return KMedianRoadResponse(**result)

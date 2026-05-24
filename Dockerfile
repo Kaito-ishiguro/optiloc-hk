@@ -22,6 +22,8 @@ COPY frontend ./frontend
 # Bake in HK demand + commercial-zone geometry (public WorldPop + Lands Dept data; no PII).
 COPY data/processed/demand_points.csv /app/data/processed/demand_points.csv
 COPY data/processed/ozp_commercial_union.geojson /app/data/processed/ozp_commercial_union.geojson
+COPY data/processed/hk_road_network.graphml /app/data/processed/hk_road_network.graphml
+COPY data/processed/demand_nodes_aggregated.csv /app/data/processed/demand_nodes_aggregated.csv
 
 # Drop root privileges before runtime.
 RUN chown -R appuser:app /app

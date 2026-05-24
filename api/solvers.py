@@ -5,8 +5,12 @@ importlib.util — the same pattern Session 013 used in file 18 to reuse
 file 16's Lloyd machinery. Notebooks remain the single source of truth for
 solver math.
 
-Data assets (demand points CSV, OZP commercial union GeoJSON) are loaded
-once into a process-wide cache at startup, then reused across requests.
+Road-network solvers (Weber + k-median) are implemented directly here;
+their graph and aggregated demand data are cached at startup alongside
+the Euclidean assets.
+
+Data assets are loaded once into a process-wide cache at startup via
+initialize_solvers(), then reused across requests.
 """
 
 import importlib.util
@@ -14,7 +18,9 @@ import time
 from types import ModuleType
 
 import geopandas as gpd
+import networkx as nx
 import numpy as np
+import osmnx as ox
 import pandas as pd
 
 from api.config import (
@@ -22,6 +28,9 @@ from api.config import (
     DEMAND_CSV,
     KMEDIAN_SOLVER_PATH,
     OZP_GEOJSON,
+    ROAD_AGG_CSV,
+    ROAD_GRAPH_ML,
+    ROAD_KMEDIAN_MAX_ITERS,
     RNG_SEED,
     WEBER_SOLVER_PATH,
     WEISZFELD_START_LAT,
@@ -43,18 +52,30 @@ def _load_module_from_path(name: str, path) -> ModuleType:
     return module
 
 
-# Process-wide cache, populated by initialize_solvers() at FastAPI startup.
+# ---- Process-wide cache -------------------------------------------------------
+# Euclidean solvers (populated by initialize_solvers).
 _weber_mod: ModuleType | None = None
 _kmedian_mod: ModuleType | None = None
 _demand_points: np.ndarray | None = None
 _weights: np.ndarray | None = None
 _ozp_geom = None  # Buffered shapely (Multi)Polygon.
 
+# Road-network solvers (populated by initialize_solvers).
+_road_graph: nx.Graph | None = None       # Undirected — used for Dijkstra.
+_road_graph_dir = None                     # Directed — used for nearest_nodes snapping.
+_agg_demand_nodes: list | None = None      # Road node IDs (unique snapped demand nodes).
+_agg_weights: np.ndarray | None = None
+_agg_lats: np.ndarray | None = None
+_agg_lons: np.ndarray | None = None
+
 
 def initialize_solvers() -> None:
     """Load notebook modules and data assets once. Called from FastAPI lifespan."""
     global _weber_mod, _kmedian_mod, _demand_points, _weights, _ozp_geom
+    global _road_graph, _road_graph_dir, _agg_demand_nodes
+    global _agg_weights, _agg_lats, _agg_lons
 
+    # Euclidean solvers.
     _weber_mod = _load_module_from_path("weber_mod", WEBER_SOLVER_PATH)
     _kmedian_mod = _load_module_from_path("kmedian_mod", KMEDIAN_SOLVER_PATH)
 
@@ -64,6 +85,16 @@ def initialize_solvers() -> None:
 
     ozp_gdf = gpd.read_file(OZP_GEOJSON)
     _ozp_geom = ozp_gdf.iloc[0].geometry.buffer(BUFFER_DEG)
+
+    # Road-network solvers.
+    _road_graph_dir = ox.load_graphml(ROAD_GRAPH_ML)
+    _road_graph = _road_graph_dir.to_undirected()
+
+    agg = pd.read_csv(ROAD_AGG_CSV)
+    _agg_demand_nodes = [int(n) for n in agg["road_node"].tolist()]
+    _agg_weights = agg["weight"].values.astype(float)
+    _agg_lats = agg["lat"].values.astype(float)
+    _agg_lons = agg["lon"].values.astype(float)
 
 
 # ---- /solve_weber wrapper -----------------------------------------------------
@@ -139,4 +170,182 @@ def solve_kmedian_ozp(k: int, n_restarts: int) -> dict:
             for r in results
         ],
         "runtime_s": total_t,
+    }
+
+
+# ---- Road-network helpers (private) ------------------------------------------
+
+_EUCLIDEAN_OPT_LAT = 22.33729   # Weiszfeld optimum from notebook 08.
+_EUCLIDEAN_OPT_LON = 114.17071
+
+
+def _road_objective(node: int) -> float:
+    """Total weighted road distance from *node* to all aggregated demand nodes."""
+    lengths = nx.single_source_dijkstra_path_length(
+        _road_graph, node, weight="length"
+    )
+    return float(
+        sum(
+            _agg_weights[i] * lengths.get(_agg_demand_nodes[i], np.inf)
+            for i in range(len(_agg_demand_nodes))
+        )
+    )
+
+
+def _road_local_search(start: int) -> tuple[int, float, int]:
+    """Hill-climb on graph neighbours until no improvement (max 500 steps)."""
+    current = start
+    current_obj = _road_objective(current)
+    final_iter = 0
+    for final_iter in range(1, 501):
+        neighbours = list(_road_graph.neighbors(current))
+        best_node = current
+        best_obj = current_obj
+        for nb in neighbours:
+            obj = _road_objective(nb)
+            if obj < best_obj:
+                best_obj = obj
+                best_node = nb
+        if best_node == current:
+            break
+        current = best_node
+        current_obj = best_obj
+    return current, current_obj, final_iter
+
+
+# ---- /solve_weber_road wrapper ------------------------------------------------
+
+def solve_weber_road() -> dict:
+    """3-seed local search for the discrete road-network Weber optimum.
+
+    Seeds mirror notebook 22:
+      1. Nearest road node to the Euclidean Weber optimum.
+      2. Highest-weight aggregated demand node.
+      3. 10th-highest-weight node (adds starting diversity).
+    """
+    assert (
+        _road_graph is not None
+        and _road_graph_dir is not None
+        and _agg_demand_nodes is not None
+    )
+
+    seed1 = int(ox.nearest_nodes(_road_graph_dir, X=_EUCLIDEAN_OPT_LON, Y=_EUCLIDEAN_OPT_LAT))
+    seed2 = int(_agg_demand_nodes[int(np.argmax(_agg_weights))])
+    seed3 = int(_agg_demand_nodes[int(np.argsort(_agg_weights)[-10])])
+
+    t0 = time.perf_counter()
+    results = [_road_local_search(s) for s in (seed1, seed2, seed3)]
+    elapsed = time.perf_counter() - t0
+
+    best_node, best_obj, _ = min(results, key=lambda r: r[1])
+    total_w = float(_agg_weights.sum())
+
+    return {
+        "node_id": int(best_node),
+        "lon": float(_road_graph.nodes[best_node]["x"]),
+        "lat": float(_road_graph.nodes[best_node]["y"]),
+        "objective": float(best_obj),
+        "per_resident_m": float(best_obj / total_w),
+        "runtime_s": elapsed,
+        "n_demand_nodes": len(_agg_demand_nodes),
+        "total_weight": total_w,
+    }
+
+
+# ---- /solve_kmedian_road wrapper ---------------------------------------------
+
+def solve_kmedian_road(k: int, n_restarts: int) -> dict:
+    """Road-network k-median via Lloyd's algorithm with multi-start.
+
+    Assignment : Dijkstra from each facility to all demand nodes.
+    Location   : population-weighted centroid snapped to nearest road node.
+    """
+    assert (
+        _road_graph is not None
+        and _road_graph_dir is not None
+        and _agg_demand_nodes is not None
+    )
+    N = len(_agg_demand_nodes)
+    total_w = float(_agg_weights.sum())
+    rng = np.random.default_rng(RNG_SEED)
+
+    t0 = time.perf_counter()
+    restart_results = []
+
+    for r in range(1, n_restarts + 1):
+        seed = int(rng.integers(0, 2**31))
+        fac_nodes = [
+            int(n)
+            for n in np.random.default_rng(seed).choice(
+                _agg_demand_nodes, size=k, replace=False
+            )
+        ]
+        prev_asgn = None
+        dist_matrix = np.full((N, k), np.inf)
+
+        for _it in range(1, ROAD_KMEDIAN_MAX_ITERS + 1):
+            for j, fn in enumerate(fac_nodes):
+                lengths = nx.single_source_dijkstra_path_length(
+                    _road_graph, fn, weight="length"
+                )
+                dist_matrix[:, j] = [
+                    lengths.get(dn, np.inf) for dn in _agg_demand_nodes
+                ]
+
+            asgn = dist_matrix.argmin(axis=1)
+            if prev_asgn is not None and np.array_equal(asgn, prev_asgn):
+                break
+            prev_asgn = asgn.copy()
+
+            new_fac = []
+            for j in range(k):
+                mask = asgn == j
+                if not mask.any():
+                    new_fac.append(fac_nodes[j])
+                    continue
+                w_j = _agg_weights[mask]
+                tot = w_j.sum()
+                c_lat = (w_j * _agg_lats[mask]).sum() / tot
+                c_lon = (w_j * _agg_lons[mask]).sum() / tot
+                new_fac.append(int(ox.nearest_nodes(_road_graph_dir, X=c_lon, Y=c_lat)))
+            fac_nodes = new_fac
+
+        obj = float((_agg_weights * dist_matrix[np.arange(N), asgn]).sum())
+        restart_results.append(
+            {"restart_id": r, "fac_nodes": fac_nodes, "asgn": asgn, "final_obj": obj}
+        )
+
+    elapsed = time.perf_counter() - t0
+    best = min(restart_results, key=lambda r: r["final_obj"])
+    best_obj = best["final_obj"]
+    worst_obj = max(r["final_obj"] for r in restart_results)
+    gap_pct = 100.0 * (worst_obj - best_obj) / best_obj if best_obj > 0 else 0.0
+    distinct = {round(r["final_obj"], 0) for r in restart_results}
+
+    facilities = []
+    for j, fn in enumerate(best["fac_nodes"]):
+        mask = best["asgn"] == j
+        pop = float(_agg_weights[mask].sum())
+        facilities.append(
+            {
+                "node_id": int(fn),
+                "lon": float(_road_graph.nodes[fn]["x"]),
+                "lat": float(_road_graph.nodes[fn]["y"]),
+                "population_served": pop,
+                "pct_served": float(100.0 * pop / total_w),
+            }
+        )
+
+    return {
+        "k": k,
+        "n_restarts": n_restarts,
+        "best_objective": float(best_obj),
+        "per_resident_m": float(best_obj / total_w),
+        "worst_objective": float(worst_obj),
+        "worst_best_gap_pct": float(gap_pct),
+        "n_distinct_optima": len(distinct),
+        "facilities": facilities,
+        "runtime_s": elapsed,
+        "n_demand_nodes": N,
+        "total_weight": total_w,
     }

@@ -84,3 +84,54 @@ class KMedianOZPResponse(BaseModel):
     facilities: list[Facility]
     restarts: list[RestartSummary]
     runtime_s: float
+
+# ---- /solve_weber_road --------------------------------------------------------
+
+class WeberRoadResponse(BaseModel):
+    node_id: int = Field(..., description="Road graph node ID of the optimum.")
+    lon: float = Field(..., description="Optimum longitude (WGS84).")
+    lat: float = Field(..., description="Optimum latitude (WGS84).")
+    objective: float = Field(..., description="Total weighted road distance (metres).")
+    per_resident_m: float = Field(..., description="Objective / total population (m/resident).")
+    runtime_s: float
+    n_demand_nodes: int
+    total_weight: float
+
+
+# ---- /solve_kmedian_road ------------------------------------------------------
+
+class KMedianRoadRequest(BaseModel):
+    k: int = Field(
+        DEFAULT_K,
+        ge=MIN_K,
+        le=MAX_K,
+        description=f"Number of facilities ({MIN_K}-{MAX_K}).",
+    )
+    n_restarts: int = Field(
+        DEFAULT_RESTARTS,
+        ge=MIN_RESTARTS,
+        le=MAX_RESTARTS,
+        description=f"Multi-start count ({MIN_RESTARTS}-{MAX_RESTARTS}).",
+    )
+
+
+class RoadFacility(BaseModel):
+    node_id: int
+    lon: float
+    lat: float
+    population_served: float
+    pct_served: float
+
+
+class KMedianRoadResponse(BaseModel):
+    k: int
+    n_restarts: int
+    best_objective: float = Field(..., description="Best total weighted road distance (metres).")
+    per_resident_m: float
+    worst_objective: float
+    worst_best_gap_pct: float
+    n_distinct_optima: int
+    facilities: list[RoadFacility]
+    runtime_s: float
+    n_demand_nodes: int
+    total_weight: float

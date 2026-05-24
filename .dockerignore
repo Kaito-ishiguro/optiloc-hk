@@ -30,6 +30,8 @@ data/raw/
 data/processed/*
 !data/processed/demand_points.csv
 !data/processed/ozp_commercial_union.geojson
+!data/processed/hk_road_network.graphml
+!data/processed/demand_nodes_aggregated.csv
 
 # Files irrelevant to runtime
 docs/
