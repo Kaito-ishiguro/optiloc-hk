@@ -639,6 +639,39 @@ foundation the demo video needs.
 Long session. Strategic, high energy. LinkedIn done. Business plan real. Ready to execute.
 
 ---
+## Session 020 — 2026-05-24 — Road network live
+
+**What I built / learned**
+- Wired road-network solvers (notebooks 21-23) into the API: two new endpoints,
+  POST /solve_weber_road and POST /solve_kmedian_road, both live on Cloud Run
+- Solved the graphml deployment problem: 24 MB file stored in GCS
+  (optiloc-assets-ace-prep-496408), downloaded into build workspace via a
+  gsutil step in cloudbuild.yaml before docker build runs
+- Bumped Cloud Run memory to 2 GiB to handle networkx road graph in memory
+- Added osmnx, networkx, scikit-learn to api/requirements.txt
+- Committed demand_nodes_aggregated.csv (645 KB) to git
+
+**Key insight or aha moment**
+The road-network Weber result confirmed in production: node 1651827916 at
+(22.3246, 114.1887), 2.33 km SE of the Euclidean optimum. This is the number
+that makes the pitch real — "straight-line models misplace your hub by over
+2 km." The k-median road endpoint runs in 4 seconds on Cloud Run for k=2,
+fast enough to demo live in a customer call.
+
+**What I got stuck on**
+Two build failures before the live API worked: first the graphml was missing
+from the Docker build context (not in git), then scikit-learn was missing from
+api/requirements.txt (osmnx needs it for nearest_nodes on unprojected graphs).
+Both were caught quickly from Cloud Run logs.
+
+**Next session's first move**
+Brainstorm with Opus: new ideas, tools, APIs, or services to enhance OptiLoc.
+No building — pure ideation and planning session.
+
+**Time spent / mood**
+Full build session. Satisfying — the critical gap from Session 019 is closed.
+The API now means what it says: road-network optimization, not Euclidean approximation.
+
 ---
 ---
 ---
