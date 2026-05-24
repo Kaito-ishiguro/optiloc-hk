@@ -1,16 +1,21 @@
 steps:
+  # Download large data asset not stored in git.
+  - name: gcr.io/cloud-builders/gsutil
+    args:
+      - cp
+      - gs://optiloc-assets-ace-prep-496408/hk_road_network.graphml
+      - data/processed/hk_road_network.graphml
+
   - name: gcr.io/cloud-builders/docker
     args:
       - build
       - -t
       - asia-east2-docker.pkg.dev/ace-prep-496408/optiloc/optiloc-api:$COMMIT_SHA
       - .
-
   - name: gcr.io/cloud-builders/docker
     args:
       - push
       - asia-east2-docker.pkg.dev/ace-prep-496408/optiloc/optiloc-api:$COMMIT_SHA
-
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud
     args:
@@ -24,6 +29,5 @@ steps:
       - --max-instances=3
       - --memory=2Gi
       - --port=8000
-
 options:
   logging: CLOUD_LOGGING_ONLY
