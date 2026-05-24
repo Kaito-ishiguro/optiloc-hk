@@ -349,3 +349,81 @@ def solve_kmedian_road(k: int, n_restarts: int) -> dict:
         "n_demand_nodes": N,
         "total_weight": total_w,
     }
+
+# ---- /analyze_network wrapper ------------------------------------------------
+
+def analyze_network(
+    existing_locations: list[tuple[float, float]],
+    k: int,
+    n_restarts: int,
+) -> dict:
+    """Baseline-aware network audit.
+
+    Parameters
+    ----------
+    existing_locations : list of (lat, lon) pairs — caller's current facilities.
+    k                  : number of facilities to optimise for.
+    n_restarts         : multi-start count passed to k-median solver.
+
+    Returns
+    -------
+    dict matching AnalyzeNetworkResponse.
+    """
+    assert (
+        _road_graph is not None
+        and _road_graph_dir is not None
+        and _agg_demand_nodes is not None
+    )
+
+    N = len(_agg_demand_nodes)
+    total_w = float(_agg_weights.sum())
+
+    t0 = time.perf_counter()
+
+    # --- 1. Snap existing locations to nearest road nodes ---------------------
+    # existing_locations are (lat, lon); ox.nearest_nodes wants X=lon, Y=lat.
+    existing_nodes = [
+        int(ox.nearest_nodes(_road_graph_dir, X=lon, Y=lat))
+        for lat, lon in existing_locations
+    ]
+
+    # --- 2. Compute baseline objective ----------------------------------------
+    m = len(existing_nodes)
+    baseline_dist = np.full((N, m), np.inf)
+    for j, fn in enumerate(existing_nodes):
+        lengths = nx.single_source_dijkstra_path_length(
+            _road_graph, fn, weight="length"
+        )
+        baseline_dist[:, j] = [
+            lengths.get(dn, np.inf) for dn in _agg_demand_nodes
+        ]
+
+    baseline_asgn = baseline_dist.argmin(axis=1)
+    baseline_obj = float(
+        (_agg_weights * baseline_dist[np.arange(N), baseline_asgn]).sum()
+    )
+
+    # --- 3. Run k-median solver for optimal -----------------------------------
+    optimal = solve_kmedian_road(k, n_restarts)
+
+    elapsed = time.perf_counter() - t0
+
+    # --- 4. Compute improvement -----------------------------------------------
+    optimal_obj = optimal["best_objective"]
+    improvement_pct = (
+        100.0 * (baseline_obj - optimal_obj) / baseline_obj
+        if baseline_obj > 0 else 0.0
+    )
+
+    return {
+        "k": k,
+        "baseline_objective": baseline_obj,
+        "optimal_objective": optimal_obj,
+        "improvement_pct": improvement_pct,
+        "baseline_per_resident_m": baseline_obj / total_w,
+        "optimal_per_resident_m": optimal_obj / total_w,
+        "recommended_facilities": optimal["facilities"],
+        "runtime_s": elapsed,
+        "n_demand_nodes": N,
+        "total_weight": total_w,
+    }

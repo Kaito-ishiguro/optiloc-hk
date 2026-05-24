@@ -38,6 +38,8 @@ from api.config import (
     WEBER_TIMEOUT_S,
 )
 from api.models import (
+    AnalyzeNetworkRequest,
+    AnalyzeNetworkResponse,
     HealthResponse,
     KMedianOZPRequest,
     KMedianOZPResponse,
@@ -46,7 +48,7 @@ from api.models import (
     WeberResponse,
     WeberRoadResponse,
 )
-from api.solvers import initialize_solvers, solve_kmedian_ozp, solve_kmedian_road, solve_weber, solve_weber_road
+from api.solvers import analyze_network, initialize_solvers, solve_kmedian_ozp, solve_kmedian_road, solve_weber, solve_weber_road
 
 logger = logging.getLogger("optiloc.api")
 logging.basicConfig(level=logging.INFO)
@@ -201,3 +203,29 @@ async def post_solve_kmedian_road(request: Request, body: KMedianRoadRequest):
             detail=f"Road k-median solver exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
         )
     return KMedianRoadResponse(**result)
+
+@app.post(
+    "/analyze_network",
+    response_model=AnalyzeNetworkResponse,
+    tags=["optimize"],
+    summary="Audit an existing facility network against the road-network k-median optimum.",
+)
+@limiter.limit(RATE_LIMIT_SOLVE)
+async def post_analyze_network(request: Request, body: AnalyzeNetworkRequest):
+    k = body.k if body.k is not None else len(body.existing_locations)
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                analyze_network,
+                body.existing_locations,
+                k,
+                body.n_restarts,
+            ),
+            timeout=ROAD_KMEDIAN_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"analyze_network exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
+        )
+    return AnalyzeNetworkResponse(**result)

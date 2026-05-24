@@ -135,3 +135,39 @@ class KMedianRoadResponse(BaseModel):
     runtime_s: float
     n_demand_nodes: int
     total_weight: float
+
+    
+# ---- /analyze_network ---------------------------------------------------------
+
+class AnalyzeNetworkRequest(BaseModel):
+    existing_locations: list[tuple[float, float]] = Field(
+        ...,
+        min_length=1,
+        max_length=MAX_K,
+        description="List of (lat, lon) pairs for existing facilities.",
+    )
+    k: int | None = Field(
+        None,
+        ge=MIN_K,
+        le=MAX_K,
+        description="Number of optimal facilities to solve for. Defaults to len(existing_locations).",
+    )
+    n_restarts: int = Field(
+        DEFAULT_RESTARTS,
+        ge=MIN_RESTARTS,
+        le=MAX_RESTARTS,
+        description=f"Multi-start count for k-median solver ({MIN_RESTARTS}-{MAX_RESTARTS}).",
+    )
+
+
+class AnalyzeNetworkResponse(BaseModel):
+    k: int
+    baseline_objective: float = Field(..., description="Total weighted road distance for existing locations (metres).")
+    optimal_objective: float = Field(..., description="Total weighted road distance for optimised locations (metres).")
+    improvement_pct: float = Field(..., description="Percentage improvement: (baseline - optimal) / baseline * 100.")
+    baseline_per_resident_m: float
+    optimal_per_resident_m: float
+    recommended_facilities: list[RoadFacility]
+    runtime_s: float
+    n_demand_nodes: int
+    total_weight: float
