@@ -14,3 +14,4 @@ pyogrio==0.12.1
 pyproj==3.7.2
 osmnx==2.1.0
 networkx==3.6.1
+scikit-learn==1.8.0
