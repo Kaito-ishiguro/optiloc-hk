@@ -28,6 +28,6 @@ steps:
       - --allow-unauthenticated
       - --max-instances=3
       - --memory=2Gi
-      - --port=8000
+      - --port=8080
 options:
   logging: CLOUD_LOGGING_ONLY
