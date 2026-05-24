@@ -673,6 +673,26 @@ Full build session. Satisfying — the critical gap from Session 019 is closed.
 The API now means what it says: road-network optimization, not Euclidean approximation.
 
 ---
+## Session 021 — 2026-05-24 — Brainstorm Backlog Built
+
+**What I built / learned**
+- Ran four Perplexity research prompts covering visualization tools, outreach and sales tooling, audit delivery infrastructure, HK market intelligence, and demand data enrichment. Triaged every option through a NOW/FUTURE framework anchored to the $3-8K-by-December money target.
+- Identified the killer feature for first-pilot conversion: baseline-aware solver mode (`POST /analyze_network`) that accepts existing facility locations, computes the current objective, returns the delta vs optimal, and surfaces coverage gaps. Bridges from academic optimizer to audit product by quantifying value in dollar or percent terms.
+- Decided to split the repo into public (code + technical docs + portfolio) and private (CONTEXT, ROADMAP, JOURNAL, future PITCH_INTELLIGENCE, future customer data). Phase 1 is no longer just portfolio; it's pre-revenue, and pricing/strategy shouldn't be public.
+- Surfaced one quotable LegCo-sourced stat per market: HK has ~105K EVs and ~1,500 fast public chargers, a 70:1 ratio. That's the coverage-gap headline I didn't have before this session.
+
+**Key insight or aha moment**
+The biggest realization: every tool Perplexity suggested for "delivery infrastructure" (Quarto, Felt Enterprise, Pitch decks, custom portals) was solving a problem I don't have yet. The actual gap between math toy and audit product isn't formatting. It's value quantification. Adding baseline-aware mode lets the same model answer both "here's what's optimal" and "here's how much better than what you have now." That second answer is what gets paid. No Perplexity option does that; it had to be designed.
+
+**What I got stuck on**
+Nothing technical (no code touched). Conceptual friction was discipline: every Perplexity output was tempting to overbuild. Took conscious effort to defer attractive items (Quarto, Stadia Maps, Mapbox Studio, custom portals) instead of saying yes to all of them.
+
+**Next session's first move**
+Session 022 starts with the public/private repo split (~30 min setup), then DATA.GOV.HK EV charger ingest pipeline (foundation for both baseline-aware mode and the EV gap-analysis pitch).
+
+**Time spent / mood**
+~3 hours of structured brainstorming. Mood: clarified. The backlog feels like a real plan now instead of a wishlist.
+
 ---
 ---
 ---

@@ -393,3 +393,76 @@ After pilot 3, pricing stabilizes at $15,000–25,000 USD per engagement, or shi
 ---
 
 *Roadmap v2 — Session 019, May 23, 2026. Major revision from v1 (Session 012). Phase 0 added. Customer discovery overhauled with outcome-first framing, warm connection strategy, and commitment-based validation. Pricing revised: first paid pilot at $3,000–5,000 USD. Startup principles integrated. Money target set: first real revenue by December 2026.*
+---
+
+## Phase 1.5 Backlog — Session 021 Brainstorm Output
+
+Session 021 was a pure brainstorm session with Opus that evaluated four Perplexity research outputs covering visualization tools, outreach/sales tooling, audit delivery infrastructure, HK market intelligence, and demand data enrichment. Output: a structured NOW/FUTURE backlog plus one new feature proposal.
+
+### NOW list (Sessions 022-024 plus Phase 0 outreach)
+
+**Session 022 precondition: split repo into public/private**
+Create new private repo `optiloc-hk-private` for sensitive docs (CONTEXT, ROADMAP, JOURNAL, future PITCH_INTELLIGENCE, future audit deliverables, future customer data). Public repo keeps code, frontend, technical docs, MATH.md. Cost: $0 (GitHub free tier). Setup time: ~30 minutes.
+
+**Product / code work (Sessions 022-023)**
+
+1. **DATA.GOV.HK EV chargers ingest pipeline**. Public charger locations and details. Source: https://data.gov.hk/en-data/dataset/hk-epd-evcpateam-evc-1. Free, monthly updates. Enables the coverage-gap pitch for EV operators.
+2. **DATA.GOV.HK building footprints ingest pipeline**. Upgrade from OZP-only constraint to actual leasable buildings. Source: https://data.gov.hk/en-data/dataset/hk-landsd-openmap-landsd-building. Free, monthly updates. Output sharpens from "this commercial area" to "this specific building."
+3. **Baseline-aware solver mode**. New endpoint `POST /analyze_network` accepts existing facility locations, computes baseline objective, computes optimal objective, returns delta + gap map + recommended locations. Bridges from academic optimizer to audit product by quantifying value. Math reuses existing `solve_kmedian_road`. Estimated: one session of work.
+
+**Outreach infrastructure (set up before June 8)**
+
+4. Google Sheet CRM with 7 columns: Name, Company, Channel, Status, Last Touch, Next Action, Notes.
+5. Calendly Free (or Google Calendar appointment schedules if functional).
+6. Google Calendar reminders tied to Next Action column.
+7. Google Meet + Gemini for call summaries (verify Gemini Pro subscription covers this feature). Fireflies Free as fallback. Manual notes as floor.
+8. Manual LinkedIn research with Notion or Docs template for personalized openers. No automation.
+
+**Documentation work (this week or next focused session)**
+
+9. **Adopt SCQA framework** (Situation, Complication, Question, Answer) for DMs and audit report structure. Free.
+10. **Draft `docs/PITCH_INTELLIGENCE.md`** with LegCo-sourced defensible stats (~105K EVs, ~9,100 chargers, ~1,500 fast chargers, 6,600+ private vs 2,550 government managed), secondary-source caveats (Fuuffy/FreightAmigo pricing data: HKD 20-50 base parcel, HKD 60-150 same-day, HKD 30-50 outlying premium), forbidden claims list, pre-written discovery call openers, audit report market-context boilerplate. 1-2 hours focused work; defer to dedicated session.
+
+**Pitch assets (Session 022 or 023)**
+
+11. Kepler.gl pitch visuals for landing page refresh. External tool only, no API integration. Free.
+12. Commit Kepler.gl map state JSON configs to `docs/visualizations/kepler_configs/` for reproducibility.
+
+### FUTURE list (revisit per stage, never proactively)
+
+**Data and API integrations**
+- Stadia Maps drive-time API. When paid pilot requires traffic-aware routing. Free tier 200K credits/month. ⚠️ $20/month if exceeded.
+- openrouteservice self-hosted. Stadia backup. Free.
+- HK Lands Department 3D building data. Post-pilot enterprise demos. Free.
+- Customer-supplied demand data ingest pipeline. When audit #1 starts.
+
+**Visualization upgrades**
+- Mapbox Studio + Mapbox GL JS. Post-pilot brand polish. Free tier exists; ⚠️ paid scales with map loads.
+- deck.gl / pydeck. When map endpoint outgrows Folium. Free.
+
+**Delivery infrastructure**
+- Felt Enterprise. When audit volume justifies API access. ⚠️ Enterprise tier required for API.
+- Quarto for PDF reports. Audit #2+, when template is repeatable. Free.
+- Pitch or Gamma for executive deck. Post-audit summary. Both have free tiers; ⚠️ paid for brand/collab.
+- Self-hosted client portal with MapLibre/React. Post-pilot, when 5+ customers justify. Mostly hosting cost.
+
+**Sales infrastructure**
+- HubSpot Free. When 50+ conversations make pipeline view useful. Free; ⚠️ persistent upgrade prompts.
+- Sales Navigator 1-month free trial. For one focused 2-day prospecting sprint, then cancel. ⚠️ $80/month if not canceled before trial ends.
+- Fireflies paid tier. When call volume justifies. ⚠️ paid.
+- Clay. When prospecting becomes a repeatable bottleneck. ⚠️ paid.
+
+**Intelligence gaps to fill later**
+- Verify HK Climate Action Plan 2050 EV targets (EPD source).
+- HK total registered vehicle count for EV penetration ratio.
+- EV registration growth rate year-over-year.
+- HK Census commercial vehicle data by district.
+- Model's first published coverage-gap stat once EV chargers ingested.
+
+### Standing rules (applies to all future sessions)
+
+- Alert user before any decision involving money or recurring costs (subscriptions, paid API tiers, software licenses, free trials that auto-convert). Let user decide before proceeding. Locked into Claude memory in Session 021.
+
+### Note on Perplexity-based brainstorm process
+
+All four Perplexity prompts from Session 021 have been run and triaged. Future brainstorm sessions should focus on: results from audit calls, specific technical research questions, or strategic pivots. Avoid generic Perplexity tool-discovery prompts without a specific gap to fill.
