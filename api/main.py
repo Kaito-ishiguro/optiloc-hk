@@ -115,7 +115,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 # ---- Endpoints ----------------------------------------------------------------
 
-@app.get("/healthz", response_model=HealthResponse, tags=["meta"])
+@app.get("/health", response_model=HealthResponse, tags=["meta"])
 async def healthz():
     """Liveness probe. Used by Docker HEALTHCHECK and Cloud Run."""
     return HealthResponse(status="ok", version=__version__)
