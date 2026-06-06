@@ -24,6 +24,7 @@ COPY data/processed/demand_points.csv /app/data/processed/demand_points.csv
 COPY data/processed/ozp_commercial_union.geojson /app/data/processed/ozp_commercial_union.geojson
 COPY data/processed/hk_road_network.graphml /app/data/processed/hk_road_network.graphml
 COPY data/processed/demand_nodes_aggregated.csv /app/data/processed/demand_nodes_aggregated.csv
+COPY data/rent/node_to_district.json /app/data/rent/node_to_district.json
 
 # Drop root privileges before runtime.
 RUN chown -R appuser:app /app

@@ -17,9 +17,11 @@ Security posture (Session 014):
 """
 
 import asyncio
+import json
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,10 +50,17 @@ from api.models import (
     KMedianRoadResponse,
     MCLPRoadRequest,
     MCLPRoadResponse,
+    SolveKmedianRentRequest,
+    SolveKmedianRentResponse,
     WeberResponse,
     WeberRoadResponse,
 )
+from api.rent_aware import solve_kmedian_rent_road
 from api.solvers import analyze_network, initialize_solvers, solve_kmedian_ozp, solve_kmedian_road, solve_weber, solve_weber_road
+import api.solvers as _solvers_cache
+
+_NODE_TO_DISTRICT_PATH = Path(__file__).resolve().parent.parent / "data" / "rent" / "node_to_district.json"
+_node_to_district: dict[str, str] = {}
 
 logger = logging.getLogger("optiloc.api")
 logging.basicConfig(level=logging.INFO)
@@ -61,8 +70,20 @@ logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _node_to_district
     logger.info("Initializing solvers and loading data assets...")
     initialize_solvers()
+    if _NODE_TO_DISTRICT_PATH.exists():
+        with open(_NODE_TO_DISTRICT_PATH, encoding="utf-8") as fh:
+            _node_to_district = json.load(fh)
+        logger.info("Loaded node_to_district: %d entries", len(_node_to_district))
+    else:
+        logger.warning(
+            "node_to_district.json not found at %s — "
+            "/solve_kmedian_rent_road will be unavailable. "
+            "Run scripts/precompute_districts.py to generate it.",
+            _NODE_TO_DISTRICT_PATH,
+        )
     logger.info("Startup complete.")
     yield
     logger.info("Shutting down.")
@@ -259,3 +280,41 @@ async def post_solve_mclp_road(request: Request, body: MCLPRoadRequest):
             detail=f"MCLP solver exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
         )
     return MCLPRoadResponse(**result)
+
+
+@app.post(
+    "/solve_kmedian_rent_road",
+    response_model=SolveKmedianRentResponse,
+    tags=["optimize"],
+    summary="Rent-aware k-median: minimise a combined distance + industrial-rent objective.",
+)
+@limiter.limit(RATE_LIMIT_SOLVE)
+async def post_solve_kmedian_rent_road(request: Request, body: SolveKmedianRentRequest):
+    if not _node_to_district:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "node_to_district.json not loaded. "
+                "Run scripts/precompute_districts.py and redeploy."
+            ),
+        )
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                solve_kmedian_rent_road,
+                _solvers_cache._road_graph,
+                _solvers_cache._agg_demand_nodes,
+                body.k,
+                _node_to_district,
+                body.rent_weight,
+                body.facility_size_sqm,
+                body.n_restarts,
+            ),
+            timeout=ROAD_KMEDIAN_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Rent-aware k-median exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
+        )
+    return SolveKmedianRentResponse(**result)

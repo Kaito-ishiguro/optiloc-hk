@@ -236,3 +236,67 @@ class MCLPRoadResponse(BaseModel):
     runtime_s: float
     n_demand_nodes: int
     total_weight: float
+
+
+# ---- /solve_kmedian_rent_road -------------------------------------------------
+
+class RentBreakdownItem(BaseModel):
+    district: str
+    region: str | None = Field(..., description="RVD macro-region; null for excluded districts.")
+    rent_hkd_sqm_month: int = Field(..., description="HK$/sqm/month (Q4 2025 RVD flatted factories).")
+    monthly_cost_hkd: int = Field(..., description="Monthly rent for the facility (rent × facility_size_sqm).")
+
+
+class SolveKmedianRentRequest(BaseModel):
+    k: int = Field(
+        DEFAULT_K,
+        ge=MIN_K,
+        le=MAX_K,
+        description=f"Number of facilities ({MIN_K}-{MAX_K}).",
+    )
+    rent_weight: float = Field(
+        0.0,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Trade-off weight for rent penalty (0 = pure distance, "
+            "1 = equal weight on distance and normalised rent). Default 0."
+        ),
+    )
+    facility_size_sqm: int = Field(
+        500,
+        ge=1,
+        le=100_000,
+        description="Assumed facility floor area in m², used only for monthly cost reporting. Default 500.",
+    )
+    n_restarts: int = Field(
+        5,
+        ge=MIN_RESTARTS,
+        le=MAX_RESTARTS,
+        description=f"Multi-start count ({MIN_RESTARTS}-{MAX_RESTARTS}). Default 5.",
+    )
+    existing_locations: list[tuple[float, float]] | None = Field(
+        None,
+        description="Optional list of (lat, lon) pairs for existing facilities (unused by solver; reserved).",
+    )
+
+
+class RentFacility(BaseModel):
+    node_id: int = Field(..., description="Road graph node ID.")
+    lon: float = Field(..., description="Facility longitude (WGS84).")
+    lat: float = Field(..., description="Facility latitude (WGS84).")
+
+
+class SolveKmedianRentResponse(BaseModel):
+    facilities: list[RentFacility]
+    mean_distance_m: float = Field(..., description="Population-weighted mean road distance at the optimum (metres).")
+    improvement_pct: float = Field(
+        ...,
+        description="Improvement in mean_distance_m from worst to best restart (%).",
+    )
+    rent_breakdown: list[RentBreakdownItem]
+    total_monthly_rent_hkd: float = Field(..., description="Total monthly rent across all facilities (HK$).")
+    rent_weight_used: float
+    runtime_s: float
+    n_demand_nodes: int
+    total_weight: float
