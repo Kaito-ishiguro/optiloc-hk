@@ -1,4 +1,4 @@
-﻿"""OptiLoc HK API — FastAPI app.
+"""OptiLoc HK API — FastAPI app.
 
 Endpoints:
   GET  /healthz             - liveness probe
@@ -156,6 +156,10 @@ async def healthz():
 )
 @limiter.limit(RATE_LIMIT_SOLVE)
 async def post_solve_weber(request: Request):
+    """
+    Endpoint to solve the single-facility Weber problem using the Weiszfeld algorithm
+    on Hong Kong demand data with Euclidean distances.
+    """
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(solve_weber),
@@ -177,6 +181,10 @@ async def post_solve_weber(request: Request):
 )
 @limiter.limit(RATE_LIMIT_SOLVE)
 async def post_solve_kmedian_ozp(request: Request, body: KMedianOZPRequest):
+    """
+    Endpoint to solve the k-median problem with an OZP commercial-zone constraint.
+    Uses Lloyd's algorithm with population-weighted centroid snapping.
+    """
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(solve_kmedian_ozp, body.k, body.n_restarts),
@@ -198,6 +206,10 @@ async def post_solve_kmedian_ozp(request: Request, body: KMedianOZPRequest):
 )
 @limiter.limit(RATE_LIMIT_SOLVE)
 async def post_solve_weber_road(request: Request):
+    """
+    Endpoint to solve the single-facility Weber problem using road-network distances.
+    Performs a multi-seed local search for the discrete road-network optimum.
+    """
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(solve_weber_road),
@@ -219,6 +231,10 @@ async def post_solve_weber_road(request: Request):
 )
 @limiter.limit(RATE_LIMIT_SOLVE)
 async def post_solve_kmedian_road(request: Request, body: KMedianRoadRequest):
+    """
+    Endpoint to solve the k-median problem using road-network distances.
+    Uses a multi-start Lloyd's algorithm on the road graph.
+    """
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(solve_kmedian_road, body.k, body.n_restarts),
@@ -239,6 +255,10 @@ async def post_solve_kmedian_road(request: Request, body: KMedianRoadRequest):
 )
 @limiter.limit(RATE_LIMIT_SOLVE)
 async def post_analyze_network(request: Request, body: AnalyzeNetworkRequest):
+    """
+    Endpoint to audit an existing facility network against the road-network k-median optimum.
+    Computes baseline metrics for existing locations and compares them to an optimal k-median solution.
+    """
     k = body.k if body.k is not None else len(body.existing_locations)
     try:
         result = await asyncio.wait_for(
