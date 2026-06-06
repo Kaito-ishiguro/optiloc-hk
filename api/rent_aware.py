@@ -114,17 +114,26 @@ def solve_kmedian_rent_road(
     total_w = float(weights.sum())
 
     # 1. Build rent_by_node and eligible node list ────────────────────────────
-    rent_by_node: dict[int, int] = {}
-    for nid in demand_nodes:
+    # Cover ALL graph nodes so centroid-snap can land anywhere without KeyError.
+    # Excluded districts (Wan Chai, Sha Tin, Islands) get r_max as a penalty
+    # so the objective never prefers them as facility locations.
+    r_min = float(min(REGIONAL_RENT.values()))
+    r_max = float(max(REGIONAL_RENT.values()))
+
+    rent_by_node: dict[int, float] = {}
+    for nid in G.nodes():
         district = node_to_district.get(str(nid))
         if district is None:
+            rent_by_node[nid] = r_max
             continue
         region = DISTRICT_REGION.get(district)
-        if region is None:
-            continue
-        rent_by_node[nid] = REGIONAL_RENT[region]
+        rent_by_node[nid] = float(REGIONAL_RENT[region]) if region else r_max
 
-    eligible_nodes = [nid for nid in demand_nodes if nid in rent_by_node]
+    # Eligible seeds: demand nodes whose district has real industrial rent data.
+    eligible_nodes = [
+        nid for nid in demand_nodes
+        if DISTRICT_REGION.get(node_to_district.get(str(nid), "")) is not None
+    ]
 
     if len(eligible_nodes) < k:
         raise RuntimeError(
@@ -132,9 +141,6 @@ def solve_kmedian_rent_road(
         )
 
     eligible_arr = np.array(eligible_nodes, dtype=object)
-
-    r_min = float(min(REGIONAL_RENT.values()))
-    r_max = float(max(REGIONAL_RENT.values()))
 
     # 2. Seeding probabilities: uniform at rent_weight=0; low-rent bias at > 0 ─
     if rent_weight > 0.0 and r_max > r_min:
@@ -232,7 +238,7 @@ def solve_kmedian_rent_road(
     for fn in best_fac_nodes:
         district = node_to_district.get(str(fn), "unknown")
         region   = DISTRICT_REGION.get(district)
-        rent_sqm = rent_by_node.get(fn, 0)
+        rent_sqm = REGIONAL_RENT[region] if region else 0
         rent_breakdown.append(
             {
                 "district":             district,
