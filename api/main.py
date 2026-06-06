@@ -39,10 +39,13 @@ from api.config import (
     ROAD_WEBER_TIMEOUT_S,
     WEBER_TIMEOUT_S,
 )
+from api.competitor import run_competitor_coverage
 from api.mclp import solve_mclp_road
 from api.models import (
     AnalyzeNetworkRequest,
     AnalyzeNetworkResponse,
+    CompetitorCoverageRequest,
+    CompetitorCoverageResponse,
     HealthResponse,
     KMedianOZPRequest,
     KMedianOZPResponse,
@@ -318,3 +321,30 @@ async def post_solve_kmedian_rent_road(request: Request, body: SolveKmedianRentR
             detail=f"Rent-aware k-median exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
         )
     return SolveKmedianRentResponse(**result)
+
+
+@app.post(
+    "/competitor_coverage",
+    response_model=CompetitorCoverageResponse,
+    tags=["optimize"],
+    summary="Differential coverage analysis: operator network vs competitor network.",
+)
+@limiter.limit(RATE_LIMIT_SOLVE)
+async def post_competitor_coverage(request: Request, body: CompetitorCoverageRequest):
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                run_competitor_coverage,
+                body.operator_locations,
+                body.competitor_locations,
+                body.threshold_m,
+                body.recommend_site,
+            ),
+            timeout=ROAD_KMEDIAN_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Competitor coverage analysis exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
+        )
+    return CompetitorCoverageResponse(**result)

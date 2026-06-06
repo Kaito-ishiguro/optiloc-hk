@@ -4,6 +4,8 @@ All numeric inputs are bounded via Pydantic Field constraints to prevent DoS
 via pathological values (e.g. k=1_000_000).
 """
 
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 from api.config import (
@@ -300,3 +302,63 @@ class SolveKmedianRentResponse(BaseModel):
     runtime_s: float
     n_demand_nodes: int
     total_weight: float
+
+
+# ---- /competitor_coverage -----------------------------------------------------
+
+class CompetitorCoverageRequest(BaseModel):
+    operator_locations: List[List[float]] = Field(
+        ...,
+        min_length=1,
+        description="Operator facility coordinates as [[lat, lng], ...].",
+    )
+    competitor_locations: List[List[float]] = Field(
+        ...,
+        min_length=1,
+        description="Competitor facility coordinates as [[lat, lng], ...].",
+    )
+    threshold_m: float = Field(
+        3000.0,
+        ge=500.0,
+        le=20_000.0,
+        description="Coverage radius in metres for 'covered' classification. Default 3 000 m.",
+    )
+    recommend_site: bool = Field(
+        True,
+        description="If true, run at-risk 1-median to recommend a new site. Default true.",
+    )
+
+
+class ZoneStats(BaseModel):
+    demand_pct: float = Field(..., description="Percentage of total weighted demand in this zone.")
+    resident_count: int = Field(..., description="Estimated resident count in this zone.")
+
+
+class CompetitorCoverageResponse(BaseModel):
+    at_risk_demand_pct: float = Field(
+        ...,
+        description="Percentage of weighted demand where competitor is closer (competitor_wins zone).",
+    )
+    at_risk_resident_count: int = Field(
+        ...,
+        description="Estimated resident count in the competitor_wins zone.",
+    )
+    operator_mean_distance_m: float = Field(
+        ...,
+        description="Population-weighted mean road distance from operator network over all demand.",
+    )
+    competitor_mean_distance_m: float = Field(
+        ...,
+        description="Population-weighted mean road distance from competitor network over all demand.",
+    )
+    zones: Dict[str, ZoneStats] = Field(
+        ...,
+        description="Per-zone demand stats: operator_wins, competitor_wins, neither.",
+    )
+    recommended_site: Optional[Dict] = Field(
+        None,
+        description=(
+            "Recommended new site targeting at-risk demand: node_id, lat, lng, "
+            "at_risk_mean_distance_m. Null if recommend_site=false or no at-risk demand."
+        ),
+    )
