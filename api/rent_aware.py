@@ -206,6 +206,27 @@ def solve_kmedian_rent_road(
                 new_fac.append(int(ox.nearest_nodes(G_dir, X=c_lon, Y=c_lat)))
             fac_nodes = new_fac
 
+        # Post-Lloyd Maranzana refinement: escape the centroid-snap local basin.
+        for j in range(k):
+            mask = asgn == j
+            if not mask.any():
+                continue
+            c_node_ids = [demand_nodes[i] for i in np.where(mask)[0]]
+            c_weights = weights[mask]
+            fac_nodes[j] = _solvers._cluster_road_local_search(
+                fac_nodes[j], c_node_ids, c_weights
+            )[0]
+
+        # Recompute distances and assignment with refined positions.
+        for j, fn in enumerate(fac_nodes):
+            lengths = nx.single_source_dijkstra_path_length(
+                G, fn, weight="length"
+            )
+            dist_matrix[:, j] = [
+                lengths.get(dn, np.inf) for dn in demand_nodes
+            ]
+        asgn = dist_matrix.argmin(axis=1)
+
         cur_obj = _combined_obj(
             dist_matrix, asgn, weights, total_w,
             fac_nodes, rent_by_node, r_min, r_max, rent_weight,

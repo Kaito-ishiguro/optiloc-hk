@@ -234,6 +234,44 @@ def _road_local_search(start: int) -> tuple[int, float, int]:
     return current, current_obj, final_iter
 
 
+def _cluster_road_local_search(
+    start: int,
+    cluster_node_ids: list[int],
+    cluster_weights: np.ndarray,
+    max_steps: int = 20,
+) -> tuple[int, float]:
+    """Maranzana hill-climb minimising weighted road distance to a demand subset.
+
+    Same structure as _road_local_search but evaluates the objective only over
+    the given cluster.  Used as a post-Lloyd refinement in solve_kmedian_road
+    and solve_kmedian_rent_road to escape centroid-snap local basins.
+    """
+    def _obj(node: int) -> float:
+        lengths = nx.single_source_dijkstra_path_length(
+            _road_graph, node, weight="length"
+        )
+        return float(
+            sum(w * lengths.get(n, np.inf)
+                for n, w in zip(cluster_node_ids, cluster_weights))
+        )
+
+    current = start
+    current_obj = _obj(current)
+    for _ in range(max_steps):
+        best_node = current
+        best_obj = current_obj
+        for nb in _road_graph.neighbors(current):
+            val = _obj(nb)
+            if val < best_obj:
+                best_obj = val
+                best_node = nb
+        if best_node == current:
+            break
+        current = best_node
+        current_obj = best_obj
+    return current, current_obj
+
+
 # ---- /solve_weber_road wrapper ------------------------------------------------
 
 def solve_weber_road() -> dict:
@@ -345,6 +383,27 @@ def solve_kmedian_road(k: int, n_restarts: int) -> dict:
                 c_lon = (w_j * _agg_lons[mask]).sum() / tot
                 new_fac.append(int(ox.nearest_nodes(_road_graph_dir, X=c_lon, Y=c_lat)))
             fac_nodes = new_fac
+
+        # Post-Lloyd Maranzana refinement: escape the centroid-snap local basin.
+        for j in range(k):
+            mask = asgn == j
+            if not mask.any():
+                continue
+            c_node_ids = [_agg_demand_nodes[i] for i in np.where(mask)[0]]
+            c_weights = _agg_weights[mask]
+            fac_nodes[j] = _cluster_road_local_search(
+                fac_nodes[j], c_node_ids, c_weights
+            )[0]
+
+        # Recompute distances and assignment with refined positions.
+        for j, fn in enumerate(fac_nodes):
+            lengths = nx.single_source_dijkstra_path_length(
+                _road_graph, fn, weight="length"
+            )
+            dist_matrix[:, j] = [
+                lengths.get(dn, np.inf) for dn in _agg_demand_nodes
+            ]
+        asgn = dist_matrix.argmin(axis=1)
 
         obj = float((_agg_weights * dist_matrix[np.arange(N), asgn]).sum())
         restart_results.append(

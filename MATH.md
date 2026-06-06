@@ -128,8 +128,10 @@ $$\text{improvement} = \frac{F(\text{existing}) - F^*(k)}{F(\text{existing})} \t
 
 where $F(\text{existing})$ is the total weighted distance under the operator's
 current facility locations (snapped to road nodes), and $F^*(k)$ is the
-k-median optimum. This is the source of the published 42.97% improvement
-statistic for Hong Kong's self-storage sector at $k=2$.
+k-median optimum. This is the source of the published ~46% improvement
+statistic for Hong Kong's self-storage sector at $k=2$ (baseline 15,809 m/res
+to optimal 8,539 m/res using the road-network 1-median; benchmark on 12,513-node
+aggregated demand graph).
 
 ---
 

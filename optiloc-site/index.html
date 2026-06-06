@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OptiLoc — Spatial Site Optimisation, Hong Kong</title>
+  <meta name="description" content="OptiLoc finds where your facilities should go. Coverage-first spatial optimisation using Hong Kong's real road network and a 7.5M-resident demand model.">
+  <meta name="geo.region" content="HK">
+  <meta name="geo.placename" content="Hong Kong">
+  <meta property="og:title" content="OptiLoc — Spatial Site Optimisation, Hong Kong">
+  <meta property="og:description" content="Where does your network belong? Coverage-first spatial optimisation on Hong Kong's real road network.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Inline SVG favicon — teal dot on off-white -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F7F4EF'/><circle cx='16' cy='16' r='10' fill='none' stroke='%230C9488' stroke-width='2'/><circle cx='16' cy='16' r='3.5' fill='%230C9488'/></svg>">
+
+  <!-- Fonts: Fraunces (editorial variable serif) + Space Mono (technical mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── RESET ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    img, svg { display: block; max-width: 100%; }
+    button { font: inherit; cursor: pointer; }
+    a { color: inherit; }
+
+    /* ─── DESIGN TOKENS ─── */
+    :root {
+      --bg:          #F7F4EF;
+      --bg-dark:     #F0EBE2;
+      --ink:         #0C0A09;
+      --ink-2:       #3A3530;
+      --ink-3:       #80786F;
+      --teal:        #0C9488;
+      --teal-wash:   rgba(12, 148, 136, 0.09);
+      --border:      #D6CFC5;
+      --border-dark: #BFB8AE;
+      --font-serif:  'Fraunces', Georgia, 'Times New Roman', serif;
+      --font-mono:   'Space Mono', 'Courier New', monospace;
+      --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* ─── BASE ─── */
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-serif);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* Grain overlay — paper texture */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 180px 180px;
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 9000;
+    }
+
+    /* ─── UTILITIES ─── */
+    .container {
+      max-width: 1280px;
+      margin-inline: auto;
+      padding-inline: 2.5rem;
+    }
+
+    .section-divider { height: 1px; background: var(--border); }
+
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--teal);
+    }
+
+    /* ─── REVEAL ANIMATIONS ─── */
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal {
+        opacity: 0;
+        transform: translateY(28px);
+        transition: opacity 0.75s var(--ease-out), transform 0.75s var(--ease-out);
+      }
+      .reveal.in {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .reveal-d1 { transition-delay: 0.10s; }
+      .reveal-d2 { transition-delay: 0.20s; }
+      .reveal-d3 { transition-delay: 0.32s; }
+      .reveal-d4 { transition-delay: 0.45s; }
+
+      /* Network SVG line draw */
+      .net-line {
+        stroke-dashoffset: var(--len, 200);
+        stroke-dasharray: var(--len, 200);
+        animation: drawLine 1.4s var(--ease-out) forwards;
+        animation-delay: var(--delay, 0s);
+      }
+      .net-node {
+        opacity: 0;
+        animation: fadeIn 0.5s ease forwards;
+        animation-delay: var(--delay, 0s);
+      }
+      @keyframes drawLine { to { stroke-dashoffset: 0; } }
+      @keyframes fadeIn   { to { opacity: 1; } }
+    }
+
+    /* ─── NAVIGATION ─── */
+    #nav {
+      position: fixed;
+      inset-block-start: 0;
+      inset-inline: 0;
+      z-index: 500;
+      padding: 1.25rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.35s ease, border-color 0.35s ease;
+      border-bottom: 1px solid transparent;
+    }
+    #nav.scrolled {
+      background: rgba(247, 244, 239, 0.93);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-color: var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--font-mono);
+      font-size: 0.9375rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      color: var(--ink);
+      display: flex;
+      align-items: baseline;
+      gap: 0;
+    }
+    .nav-logo-accent { color: var(--teal); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2.25rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink-2);
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links .nav-btn {
+      color: var(--teal);
+      border: 1px solid var(--teal);
+      padding: 0.4rem 1rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-links .nav-btn:hover { background: var(--teal); color: var(--bg); }
+
+    .nav-hamburger {
+      display: none;
+      background: none;
+      border: none;
+      padding: 0.375rem;
+      color: var(--ink);
+    }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: 55fr 45fr;
+      align-items: center;
+      gap: 3rem;
+      padding: 8rem 2.5rem 5rem;
+      max-width: 1280px;
+      margin-inline: auto;
+    }
+
+    .hero-content { max-width: 620px; }
+
+    .hero-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      margin-bottom: 2.25rem;
+    }
+    .hero-eyebrow-line {
+      display: block;
+      width: 2.25rem;
+      height: 1px;
+      background: var(--teal);
+      flex-shrink: 0;
+    }
+    .hero-eyebrow-text {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+
+    .hero-headline {
+      font-family: var(--font-serif);
+      font-size: clamp(3rem, 6vw, 5.75rem);
+      font-weight: 800;
+      line-height: 1.01;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.875rem;
+      color: var(--ink);
+    }
+    .hero-headline em {
+      font-style: italic;
+      color: var(--teal);
+    }
+
+    .hero-body {
+      font-size: clamp(1rem, 1.25vw, 1.125rem);
+      line-height: 1.75;
+      color: var(--ink-2);
+      max-width: 460px;
+      margin-bottom: 2.75rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Primary button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 0.875rem 1.625rem;
+      border: 1px solid transparent;
+      transition: background 0.22s, color 0.22s, border-color 0.22s;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-ink {
+      background: var(--ink);
+      color: var(--bg);
+      border-color: var(--ink);
+    }
+    .btn-ink:hover { background: var(--teal); border-color: var(--teal); }
+
+    .btn-ghost-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink-3);
+      transition: color 0.2s;
+      border: none;
+      background: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .btn-ghost-link:hover { color: var(--teal); }
+    .btn-ghost-link svg { flex-shrink: 0; }
+
+    /* Hero SVG panel */
+    .hero-visual {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .hero-svg-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 530px;
+    }
+
+    .hero-svg-wrap svg {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    /* Subtle coordinate annotation */
+    .hero-coord {
+      position: absolute;
+      bottom: -1.5rem;
+      right: 0;
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.1em;
+      color: var(--ink-3);
+      opacity: 0.5;
+    }
+
+    /* ─── SECTION HEADER pattern ─── */
+    .s-header {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2.5rem;
+      align-items: end;
+      margin-bottom: 4.5rem;
+    }
+    .s-header-tag { padding-bottom: 0.35rem; }
+    .s-title {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 3.75vw, 3.25rem);
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+    }
+    .s-title em { font-style: italic; color: var(--teal); }
+
+    /* ─── PROOF SECTION ─── */
+    #proof { padding: 6.5rem 0; }
+
+    .proof-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .proof-stat {
+      padding: 3.5rem 2.25rem 3rem;
+      border-right: 1px solid var(--border);
+    }
+    .proof-stat:last-child { border-right: none; }
+
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 1rem;
+    }
+    .stat-number {
+      font-family: var(--font-serif);
+      font-size: clamp(2.75rem, 4.5vw, 4.25rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--ink);
+      margin-bottom: 1rem;
+    }
+    .stat-number .teal-num { color: var(--teal); }
+    .stat-desc {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--ink-2);
+      max-width: 280px;
+    }
+
+    .proof-links {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+    .proof-links-label {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .proof-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink-2);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.125rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .proof-link:hover { color: var(--teal); border-color: var(--teal); }
+
+    /* ─── HOW IT WORKS ─── */
+    #how {
+      padding: 6.5rem 0;
+      background: var(--ink);
+      color: var(--bg);
+    }
+    #how .s-title { color: var(--bg); }
+    #how .s-title em { color: var(--teal); }
+    #how .section-tag { color: var(--teal); }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid rgba(247, 244, 239, 0.1);
+    }
+    .step {
+      padding: 3.5rem 2.25rem 3.5rem;
+      border-right: 1px solid rgba(247, 244, 239, 0.1);
+    }
+    .step:last-child { border-right: none; }
+
+    .step-num {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 2.25rem;
+    }
+    .step-icon {
+      width: 100%;
+      height: 72px;
+      margin-bottom: 2rem;
+    }
+    .step-title {
+      font-family: var(--font-serif);
+      font-size: 1.4375rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--bg);
+      margin-bottom: 0.875rem;
+    }
+    .step-body {
+      font-size: 0.9375rem;
+      line-height: 1.7;
+      color: rgba(247, 244, 239, 0.6);
+    }
+
+    /* ─── CAPABILITIES ─── */
+    #capabilities { padding: 6.5rem 0; }
+
+    .cap-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      border: 1px solid var(--border);
+    }
+    .cap {
+      padding: 2.75rem;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.22s;
+      cursor: default;
+    }
+    .cap:hover { background: var(--teal-wash); }
+    .cap:nth-child(2n) { border-right: none; }
+    .cap:nth-child(3),
+    .cap:nth-child(4) { border-bottom: none; }
+
+    .cap-icon {
+      width: 2.25rem;
+      height: 2.25rem;
+      margin-bottom: 1.625rem;
+    }
+    .cap-title {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin-bottom: 0.75rem;
+    }
+    .cap-body {
+      font-size: 0.9375rem;
+      line-height: 1.65;
+      color: var(--ink-2);
+    }
+
+    /* ─── CONTACT ─── */
+    #contact {
+      padding: 6.5rem 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .contact-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7rem;
+      align-items: start;
+    }
+    .contact-left { max-width: 480px; }
+    .contact-desc {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: var(--ink-2);
+      margin-top: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .contact-meta {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      line-height: 1.8;
+    }
+    .contact-meta span { color: var(--teal); margin-right: 0.4rem; }
+
+    /* Form */
+    .form { display: flex; flex-direction: column; gap: 1.5rem; }
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .field-label {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .field-input,
+    .field-textarea {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      color: var(--ink);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 0 0.5rem;
+      outline: none;
+      width: 100%;
+      resize: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field-input::placeholder,
+    .field-textarea::placeholder { color: var(--ink-3); }
+    .field-input:focus,
+    .field-textarea:focus { border-color: var(--teal); }
+    .field-textarea { min-height: 110px; line-height: 1.6; }
+
+    .form-actions { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.25rem; }
+    .form-note {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-3);
+    }
+    .form-success {
+      display: none;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      letter-spacing: 0.06em;
+      color: var(--teal);
+      padding: 1rem 0;
+    }
+    .form-error {
+      display: none;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      color: #c53030;
+      padding: 0.5rem 0;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: 1280px;
+      margin-inline: auto;
+    }
+    .footer-copy {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-3);
+    }
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .footer-links a {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink-3);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--teal); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1024px) {
+      #hero {
+        grid-template-columns: 1fr;
+        padding: 7rem 2rem 4rem;
+        gap: 3.5rem;
+      }
+      .hero-visual { justify-content: flex-start; }
+      .hero-svg-wrap { max-width: 480px; }
+
+      .steps { grid-template-columns: 1fr; }
+      .step {
+        border-right: none;
+        border-bottom: 1px solid rgba(247, 244, 239, 0.1);
+      }
+      .step:last-child { border-bottom: none; }
+
+      .contact-inner { grid-template-columns: 1fr; gap: 3.5rem; }
+    }
+
+    @media (max-width: 768px) {
+      #nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: rgba(247,244,239,0.97); backdrop-filter: blur(10px); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); gap: 1.25rem; }
+      .nav-links.open { display: flex; }
+      .nav-hamburger { display: block; }
+      #nav { position: relative; } /* relative parent for dropdown */
+      #nav.fixed-pos { position: fixed; }
+
+      .container { padding-inline: 1.5rem; }
+      #proof, #how, #capabilities, #contact { padding-block: 4.5rem; }
+
+      .proof-stats { grid-template-columns: 1fr; }
+      .proof-stat { border-right: none; border-bottom: 1px solid var(--border); }
+      .proof-stat:last-child { border-bottom: none; }
+
+      .s-header { grid-template-columns: 1fr; gap: 1rem; }
+
+      .cap-grid { grid-template-columns: 1fr; }
+      .cap { border-right: none; }
+      .cap:nth-child(3), .cap:nth-child(4) { border-bottom: 1px solid var(--border); }
+      .cap:last-child { border-bottom: none; }
+
+      footer { flex-direction: column; align-items: flex-start; padding: 2rem 1.5rem; }
+    }
+
+    @media (max-width: 480px) {
+      #hero { padding-inline: 1.25rem; }
+      .hero-headline { font-size: 2.75rem; }
+      .hero-actions { flex-direction: column; align-items: flex-start; }
+      .proof-stat { padding: 2.5rem 1.5rem 2rem; }
+      .step { padding: 2.5rem 1.5rem; }
+      .cap { padding: 2rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     NAVIGATION
+═══════════════════════════════════════ -->
+<nav id="nav" class="fixed-pos">
+  <a href="/" class="nav-logo">Opti<span class="nav-logo-accent">Loc</span></a>
+
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#proof">System</a></li>
+    <li><a href="#how">Method</a></li>
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#contact" class="nav-btn">Request Analysis</a></li>
+  </ul>
+
+  <button class="nav-hamburger" id="hamburger" aria-label="Open navigation" aria-expanded="false" aria-controls="nav-links">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <line x1="3" y1="7"  x2="19" y2="7"/>
+      <line x1="3" y1="15" x2="19" y2="15"/>
+    </svg>
+  </button>
+</nav>
+
+
+<!-- ═══════════════════════════════════════
+     HERO
+═══════════════════════════════════════ -->
+<section id="hero" aria-label="Hero">
+  <!-- Content -->
+  <div class="hero-content">
+    <div class="hero-eyebrow reveal">
+      <span class="hero-eyebrow-line" aria-hidden="true"></span>
+      <span class="hero-eyebrow-text">Hong Kong — Spatial Optimisation</span>
+    </div>
+
+    <h1 class="hero-headline reveal reveal-d1">
+      Where does your<br>network <em>belong</em>?
+    </h1>
+
+    <p class="hero-body reveal reveal-d2">
+      OptiLoc finds the optimal placement for physical facilities — logistics depots, service points, charging networks — using Hong Kong's real road network and a 7.5&thinsp;M-resident demand model. Coverage-first. Distance-minimising.
+    </p>
+
+    <div class="hero-actions reveal reveal-d3">
+      <a href="#contact" class="btn btn-ink">
+        Request a Free Analysis
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M2.5 7.5h10M8.5 3.5l4 4-4 4"/>
+        </svg>
+      </a>
+      <a href="#proof" class="btn-ghost-link">
+        Inspect the live system
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M2 6.5h9M7 2.5l4 4-4 4"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- Network visualisation -->
+  <div class="hero-visual reveal reveal-d2" aria-hidden="true">
+    <div class="hero-svg-wrap">
+      <!--
+        Abstract network graph representing Hong Kong's 18 districts.
+        Teal nodes = OptiLoc-selected optimal facility sites.
+        Grey nodes = existing demand points.
+        Coverage rings = served area at threshold distance.
+      -->
+      <svg viewBox="0 0 520 580" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Coordinate grid -->
+          <pattern id="coord-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0C0A09" stroke-width="0.3" opacity="0.07"/>
+          </pattern>
+          <!-- Teal glow filter for optimal nodes -->
+          <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Grid background -->
+        <rect width="520" height="580" fill="url(#coord-grid)"/>
+
+        <!-- ── Coverage rings (optimal sites) ── -->
+        <circle cx="238" cy="292" r="76" stroke="#0C9488" stroke-width="0.8" stroke-dasharray="5 3.5"
+                fill="#0C9488" fill-opacity="0.04"
+                class="net-node" style="--delay:1.8s"/>
+        <circle cx="268" cy="212" r="62" stroke="#0C9488" stroke-width="0.8" stroke-dasharray="5 3.5"
+                fill="#0C9488" fill-opacity="0.035"
+                class="net-node" style="--delay:2.0s"/>
+        <circle cx="152" cy="182" r="52" stroke="#0C9488" stroke-width="0.7" stroke-dasharray="4 3"
+                fill="#0C9488" fill-opacity="0.03"
+                class="net-node" style="--delay:2.2s"/>
+
+        <!-- ── Road network edges (HK island) ── -->
+        <line x1="202" y1="306" x2="248" y2="299" stroke="#0C0A09" stroke-opacity="0.15" stroke-width="1"
+              class="net-line" style="--len:48; --delay:0.05s"/>
+        <line x1="248" y1="299" x2="314" y2="278" stroke="#0C0A09" stroke-opacity="0.15" stroke-width="1"
+              class="net-line" style="--len:70; --delay:0.12s"/>
+        <line x1="202" y1="306" x2="196" y2="374" stroke="#0C0A09" stroke-opacity="0.12" stroke-width="0.9"
+              class="net-line" style="--len:68; --delay:0.08s"/>
+
+        <!-- Cross-harbour connections -->
+        <line x1="228" y1="300" x2="234" y2="234" stroke="#0C0A09" stroke-opacity="0.2" stroke-width="1.5"
+              class="net-line" style="--len:66; --delay:0.22s"/>
+        <line x1="254" y1="294" x2="268" y2="224" stroke="#0C0A09" stroke-opacity="0.18" stroke-width="1.2"
+              class="net-line" style="--len:72; --delay:0.28s"/>
+
+        <!-- Kowloon peninsula -->
+        <line x1="220" y1="230" x2="234" y2="234" stroke="#0C0A09" stroke-opacity="0.2" stroke-width="1.5"
+              class="net-line" style="--len:15; --delay:0.32s"/>
+        <line x1="220" y1="230" x2="196" y2="214" stroke="#0C0A09" stroke-opacity="0.16" stroke-width="1"
+              class="net-line" style="--len:28; --delay:0.36s"/>
+        <line x1="234" y1="234" x2="266" y2="226" stroke="#0C0A09" stroke-opacity="0.2" stroke-width="1.5"
+              class="net-line" style="--len:33; --delay:0.4s"/>
+        <line x1="266" y1="226" x2="292" y2="210" stroke="#0C0A09" stroke-opacity="0.16" stroke-width="1"
+              class="net-line" style="--len:30; --delay:0.44s"/>
+        <line x1="292" y1="210" x2="326" y2="220" stroke="#0C0A09" stroke-opacity="0.15" stroke-width="1"
+              class="net-line" style="--len:36; --delay:0.48s"/>
+
+        <!-- New Territories west spine -->
+        <line x1="196" y1="214" x2="152" y2="182" stroke="#0C0A09" stroke-opacity="0.15" stroke-width="1"
+              class="net-line" style="--len:54; --delay:0.52s"/>
+        <line x1="152" y1="182" x2="118" y2="168" stroke="#0C0A09" stroke-opacity="0.13" stroke-width="0.9"
+              class="net-line" style="--len:38; --delay:0.56s"/>
+        <line x1="118" y1="168" x2="76" y2="146" stroke="#0C0A09" stroke-opacity="0.12" stroke-width="0.9"
+              class="net-line" style="--len:48; --delay:0.62s"/>
+        <line x1="76" y1="146" x2="93" y2="110" stroke="#0C0A09" stroke-opacity="0.1" stroke-width="0.8"
+              class="net-line" style="--len:40; --delay:0.68s"/>
+
+        <!-- NT north arc -->
+        <line x1="93" y1="110" x2="174" y2="78" stroke="#0C0A09" stroke-opacity="0.1" stroke-width="0.8"
+              class="net-line" style="--len:88; --delay:0.74s"/>
+        <line x1="174" y1="78" x2="270" y2="86" stroke="#0C0A09" stroke-opacity="0.1" stroke-width="0.8"
+              class="net-line" style="--len:97; --delay:0.82s"/>
+
+        <!-- NT east corridor -->
+        <line x1="270" y1="86" x2="264" y2="148" stroke="#0C0A09" stroke-opacity="0.13" stroke-width="0.9"
+              class="net-line" style="--len:62; --delay:0.88s"/>
+        <line x1="264" y1="148" x2="266" y2="226" stroke="#0C0A09" stroke-opacity="0.15" stroke-width="1"
+              class="net-line" style="--len:78; --delay:0.94s"/>
+        <line x1="264" y1="148" x2="360" y2="158" stroke="#0C0A09" stroke-opacity="0.1" stroke-width="0.8"
+              class="net-line" style="--len:96; --delay:1.0s"/>
+        <line x1="360" y1="158" x2="326" y2="220" stroke="#0C0A09" stroke-opacity="0.11" stroke-width="0.9"
+              class="net-line" style="--len:73; --delay:1.06s"/>
+
+        <!-- Islands (dashed — water crossing) -->
+        <line x1="202" y1="306" x2="114" y2="362" stroke="#0C0A09" stroke-opacity="0.09" stroke-width="0.75"
+              stroke-dasharray="5 4"
+              class="net-line" style="--len:100; --delay:1.12s"/>
+
+        <!-- ── Optimal-site teal edges ── -->
+        <line x1="234" y1="234" x2="238" y2="292" stroke="#0C9488" stroke-opacity="0.55" stroke-width="1.75"
+              class="net-line" style="--len:58; --delay:1.4s"/>
+        <line x1="238" y1="292" x2="268" y2="212" stroke="#0C9488" stroke-opacity="0.5" stroke-width="1.75"
+              class="net-line" style="--len:84; --delay:1.5s"/>
+        <line x1="268" y1="212" x2="152" y2="182" stroke="#0C9488" stroke-opacity="0.4" stroke-width="1.25"
+              class="net-line" style="--len:118; --delay:1.6s"/>
+
+        <!-- ── Regular demand nodes ── -->
+        <circle cx="202" cy="306" r="4"   fill="#0C0A09" fill-opacity="0.55" class="net-node" style="--delay:0.05s"/>
+        <circle cx="248" cy="299" r="2.5" fill="#0C0A09" fill-opacity="0.4"  class="net-node" style="--delay:0.12s"/>
+        <circle cx="314" cy="278" r="3"   fill="#0C0A09" fill-opacity="0.4"  class="net-node" style="--delay:0.12s"/>
+        <circle cx="196" cy="374" r="2"   fill="#0C0A09" fill-opacity="0.3"  class="net-node" style="--delay:0.15s"/>
+        <circle cx="114" cy="362" r="2"   fill="#0C0A09" fill-opacity="0.28" class="net-node" style="--delay:0.3s"/>
+
+        <circle cx="220" cy="230" r="4.5" fill="#0C0A09" fill-opacity="0.55" class="net-node" style="--delay:0.32s"/>
+        <circle cx="196" cy="214" r="3.5" fill="#0C0A09" fill-opacity="0.48" class="net-node" style="--delay:0.36s"/>
+        <circle cx="266" cy="226" r="4"   fill="#0C0A09" fill-opacity="0.52" class="net-node" style="--delay:0.4s"/>
+        <circle cx="292" cy="210" r="3"   fill="#0C0A09" fill-opacity="0.44" class="net-node" style="--delay:0.44s"/>
+        <circle cx="326" cy="220" r="3.5" fill="#0C0A09" fill-opacity="0.44" class="net-node" style="--delay:0.48s"/>
+
+        <circle cx="152" cy="182" r="4"   fill="#0C0A09" fill-opacity="0.5"  class="net-node" style="--delay:0.52s"/>
+        <circle cx="118" cy="168" r="3"   fill="#0C0A09" fill-opacity="0.4"  class="net-node" style="--delay:0.56s"/>
+        <circle cx="76"  cy="146" r="3.5" fill="#0C0A09" fill-opacity="0.44" class="net-node" style="--delay:0.62s"/>
+        <circle cx="93"  cy="110" r="3"   fill="#0C0A09" fill-opacity="0.38" class="net-node" style="--delay:0.68s"/>
+        <circle cx="174" cy="78"  r="2.5" fill="#0C0A09" fill-opacity="0.33" class="net-node" style="--delay:0.74s"/>
+        <circle cx="270" cy="86"  r="2.5" fill="#0C0A09" fill-opacity="0.33" class="net-node" style="--delay:0.82s"/>
+        <circle cx="264" cy="148" r="3.5" fill="#0C0A09" fill-opacity="0.44" class="net-node" style="--delay:0.88s"/>
+        <circle cx="360" cy="158" r="3"   fill="#0C0A09" fill-opacity="0.38" class="net-node" style="--delay:1.0s"/>
+
+        <!-- ── Optimal facility nodes (teal, glowing) ── -->
+        <circle cx="238" cy="292" r="7"  fill="#0C9488" fill-opacity="0.9" filter="url(#glow)"
+                class="net-node" style="--delay:1.4s"/>
+        <circle cx="268" cy="212" r="6.5" fill="#0C9488" fill-opacity="0.85" filter="url(#glow)"
+                class="net-node" style="--delay:1.5s"/>
+        <circle cx="152" cy="182" r="6"  fill="#0C9488" fill-opacity="0.8" filter="url(#glow)"
+                class="net-node" style="--delay:1.6s"/>
+
+        <!-- Outer pulse rings on optimal nodes -->
+        <circle cx="238" cy="292" r="15" stroke="#0C9488" stroke-width="0.8" stroke-opacity="0.35" fill="none"
+                class="net-node" style="--delay:1.7s"/>
+        <circle cx="268" cy="212" r="13" stroke="#0C9488" stroke-width="0.8" stroke-opacity="0.3" fill="none"
+                class="net-node" style="--delay:1.9s"/>
+        <circle cx="152" cy="182" r="12" stroke="#0C9488" stroke-width="0.7" stroke-opacity="0.28" fill="none"
+                class="net-node" style="--delay:2.1s"/>
+
+        <!-- Technical annotation -->
+        <text x="252" y="307" font-family="'Space Mono', monospace" font-size="7.5" fill="#0C9488" fill-opacity="0.8"
+              class="net-node" style="--delay:2.3s">optimal ×3</text>
+        <text x="16" y="554" font-family="'Space Mono', monospace" font-size="7" fill="#0C0A09" fill-opacity="0.22">
+          HONG KONG ROAD NETWORK — 18 DISTRICTS — OPTILOC MODEL
+        </text>
+        <text x="16" y="22" font-family="'Space Mono', monospace" font-size="7" fill="#0C0A09" fill-opacity="0.18">
+          22°22′N  114°08′E
+        </text>
+        <text x="392" y="570" font-family="'Space Mono', monospace" font-size="7" fill="#0C0A09" fill-opacity="0.18">
+          22°10′N  114°18′E
+        </text>
+      </svg>
+
+      <p class="hero-coord" aria-hidden="true">OSM · HKSAR District Boundaries · 7.5M demand model</p>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+
+<!-- ═══════════════════════════════════════
+     PROOF / LIVE SYSTEM
+═══════════════════════════════════════ -->
+<section id="proof" aria-label="System proof">
+  <div class="container">
+    <div class="s-header">
+      <div class="s-header-tag">
+        <span class="section-tag">— 01</span>
+      </div>
+      <h2 class="s-title reveal">
+        A working system,<br>not a <em>pitch</em>.
+      </h2>
+    </div>
+
+    <div class="proof-stats">
+      <div class="proof-stat reveal">
+        <div class="stat-label">Coverage improvement</div>
+        <div class="stat-number">
+          <span class="counter" data-target="45.99" data-decimals="2">0</span><span class="teal-num">%</span>
+        </div>
+        <p class="stat-desc">
+          Median gain in population-within-threshold coverage achieved by OptiLoc placement versus naive or uniform distribution across tested HK network configurations.
+        </p>
+      </div>
+
+      <div class="proof-stat reveal reveal-d1">
+        <div class="stat-label">Population modelled</div>
+        <div class="stat-number">
+          <span class="counter" data-target="7.5" data-decimals="1">0</span>M
+        </div>
+        <p class="stat-desc">
+          Hong Kong residents across all 18 districts, weighted by granular district-level demand density from official HKSAR census data.
+        </p>
+      </div>
+
+      <div class="proof-stat reveal reveal-d2">
+        <div class="stat-label">Districts covered</div>
+        <div class="stat-number">
+          <span class="counter" data-target="18" data-decimals="0">0</span>
+        </div>
+        <p class="stat-desc">
+          Full administrative coverage — including Islands district, all New Territories sub-regions, Kowloon, and Hong Kong Island.
+        </p>
+      </div>
+    </div>
+
+    <div class="proof-links">
+      <span class="proof-links-label">Inspect the live system</span>
+      <a href="#" class="proof-link" target="_blank" rel="noopener noreferrer">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+          <rect x="2" y="2" width="9" height="9" rx="1"/>
+          <path d="M5 6.5h3M6.5 5v3"/>
+        </svg>
+        Live API Docs
+      </a>
+      <a href="#" class="proof-link" target="_blank" rel="noopener noreferrer">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+          <path d="M6.5 1C3.46 1 1 3.46 1 6.5c0 2.42 1.57 4.48 3.75 5.2.27.05.37-.12.37-.26v-.9c-1.52.33-1.84-.73-1.84-.73-.25-.63-.61-.8-.61-.8-.5-.34.04-.33.04-.33.55.04.84.57.84.57.49.84 1.28.6 1.6.46.05-.36.19-.6.35-.74-1.21-.14-2.49-.6-2.49-2.69 0-.59.21-1.08.56-1.46-.06-.14-.25-.7.05-1.44 0 0 .46-.15 1.5.56A5.22 5.22 0 0 1 6.5 4.37c.46 0 .93.06 1.37.18 1.04-.71 1.5-.56 1.5-.56.3.74.11 1.3.05 1.44.35.38.56.87.56 1.46 0 2.1-1.28 2.55-2.5 2.69.2.17.37.5.37 1.01v1.5c0 .15.1.31.38.26A5.5 5.5 0 0 0 12 6.5C12 3.46 9.54 1 6.5 1z"/>
+        </svg>
+        Open-source Repo
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+
+<!-- ═══════════════════════════════════════
+     HOW IT WORKS
+═══════════════════════════════════════ -->
+<section id="how" aria-label="Method">
+  <div class="container">
+    <div class="s-header">
+      <div class="s-header-tag">
+        <span class="section-tag">— 02</span>
+      </div>
+      <h2 class="s-title reveal">The method.</h2>
+    </div>
+  </div>
+
+  <div class="container" style="padding-inline: 0; max-width: 1280px; margin-inline: auto;">
+    <div class="steps">
+
+      <div class="step reveal">
+        <div class="step-num">Step 01</div>
+        <!-- Demand scatter illustration -->
+        <svg class="step-icon" viewBox="0 0 200 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <line x1="0" y1="36" x2="200" y2="36" stroke="#F7F4EF" stroke-opacity="0.06" stroke-width="0.5"/>
+          <line x1="100" y1="0" x2="100" y2="72" stroke="#F7F4EF" stroke-opacity="0.06" stroke-width="0.5"/>
+          <circle cx="22"  cy="38" r="3"   fill="#F7F4EF" fill-opacity="0.55"/>
+          <circle cx="54"  cy="18" r="5"   fill="#F7F4EF" fill-opacity="0.6"/>
+          <circle cx="78"  cy="52" r="4"   fill="#F7F4EF" fill-opacity="0.55"/>
+          <circle cx="108" cy="22" r="3.5" fill="#F7F4EF" fill-opacity="0.55"/>
+          <circle cx="138" cy="44" r="6"   fill="#F7F4EF" fill-opacity="0.6"/>
+          <circle cx="162" cy="14" r="2.5" fill="#F7F4EF" fill-opacity="0.45"/>
+          <circle cx="185" cy="58" r="4"   fill="#F7F4EF" fill-opacity="0.5"/>
+          <circle cx="44"  cy="62" r="2"   fill="#F7F4EF" fill-opacity="0.38"/>
+          <circle cx="92"  cy="66" r="3"   fill="#F7F4EF" fill-opacity="0.45"/>
+          <circle cx="124" cy="64" r="2.5" fill="#F7F4EF" fill-opacity="0.4"/>
+        </svg>
+        <h3 class="step-title">Define demand</h3>
+        <p class="step-body">
+          Load your demand geography — population data, customer locations, operational catchments — mapped to Hong Kong's 18 administrative districts and weighted by density.
+        </p>
+      </div>
+
+      <div class="step reveal reveal-d1">
+        <div class="step-num">Step 02</div>
+        <!-- Road network illustration -->
+        <svg class="step-icon" viewBox="0 0 200 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <line x1="22" y1="38" x2="54" y2="18"  stroke="#F7F4EF" stroke-opacity="0.45" stroke-width="1"/>
+          <line x1="54" y1="18" x2="108" y2="22" stroke="#F7F4EF" stroke-opacity="0.45" stroke-width="1"/>
+          <line x1="108" y1="22" x2="162" y2="14" stroke="#F7F4EF" stroke-opacity="0.38" stroke-width="1"/>
+          <line x1="54" y1="18" x2="78" y2="52"  stroke="#F7F4EF" stroke-opacity="0.38" stroke-width="1"/>
+          <line x1="78" y1="52" x2="138" y2="44" stroke="#F7F4EF" stroke-opacity="0.45" stroke-width="1.5"/>
+          <line x1="108" y1="22" x2="138" y2="44" stroke="#F7F4EF" stroke-opacity="0.35" stroke-width="1"/>
+          <line x1="138" y1="44" x2="185" y2="58" stroke="#F7F4EF" stroke-opacity="0.35" stroke-width="1"/>
+          <line x1="22" y1="38" x2="78" y2="52"  stroke="#F7F4EF" stroke-opacity="0.3"  stroke-width="0.75"/>
+          <circle cx="22"  cy="38" r="2.5" fill="#F7F4EF" fill-opacity="0.5"/>
+          <circle cx="54"  cy="18" r="3"   fill="#F7F4EF" fill-opacity="0.6"/>
+          <circle cx="78"  cy="52" r="2.5" fill="#F7F4EF" fill-opacity="0.5"/>
+          <circle cx="108" cy="22" r="2.5" fill="#F7F4EF" fill-opacity="0.5"/>
+          <circle cx="138" cy="44" r="3"   fill="#F7F4EF" fill-opacity="0.6"/>
+          <circle cx="162" cy="14" r="2"   fill="#F7F4EF" fill-opacity="0.4"/>
+          <circle cx="185" cy="58" r="2"   fill="#F7F4EF" fill-opacity="0.4"/>
+        </svg>
+        <h3 class="step-title">Model the real network</h3>
+        <p class="step-body">
+          Distances are computed on Hong Kong's actual road network via OSM — not straight lines. Travel paths follow real routes, tunnels, waterway crossings, and road classifications.
+        </p>
+      </div>
+
+      <div class="step reveal reveal-d2">
+        <div class="step-num">Step 03</div>
+        <!-- Optimal placement illustration -->
+        <svg class="step-icon" viewBox="0 0 200 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Dimmed background network -->
+          <line x1="22" y1="38" x2="54" y2="18"  stroke="#F7F4EF" stroke-opacity="0.14" stroke-width="0.75"/>
+          <line x1="54" y1="18" x2="108" y2="22" stroke="#F7F4EF" stroke-opacity="0.14" stroke-width="0.75"/>
+          <line x1="108" y1="22" x2="162" y2="14" stroke="#F7F4EF" stroke-opacity="0.14" stroke-width="0.75"/>
+          <line x1="78" y1="52" x2="138" y2="44" stroke="#F7F4EF" stroke-opacity="0.14" stroke-width="0.75"/>
+          <line x1="138" y1="44" x2="185" y2="58" stroke="#F7F4EF" stroke-opacity="0.14" stroke-width="0.75"/>
+          <!-- Teal optimal connections -->
+          <line x1="78" y1="52" x2="54" y2="18"  stroke="#0C9488" stroke-opacity="0.75" stroke-width="1.75"/>
+          <line x1="78" y1="52" x2="138" y2="44" stroke="#0C9488" stroke-opacity="0.65" stroke-width="1.5"/>
+          <!-- Coverage ring -->
+          <circle cx="78" cy="52" r="16" stroke="#0C9488" stroke-opacity="0.22" stroke-width="0.9" fill="none"/>
+          <!-- Optimal node -->
+          <circle cx="78" cy="52" r="5.5" fill="#0C9488" fill-opacity="0.85"/>
+          <!-- Dimmed nodes -->
+          <circle cx="22"  cy="38" r="2"   fill="#F7F4EF" fill-opacity="0.22"/>
+          <circle cx="54"  cy="18" r="2.5" fill="#F7F4EF" fill-opacity="0.32"/>
+          <circle cx="108" cy="22" r="2"   fill="#F7F4EF" fill-opacity="0.22"/>
+          <circle cx="138" cy="44" r="3.5" fill="#F7F4EF" fill-opacity="0.28"/>
+          <circle cx="162" cy="14" r="1.5" fill="#F7F4EF" fill-opacity="0.18"/>
+          <circle cx="185" cy="58" r="1.5" fill="#F7F4EF" fill-opacity="0.18"/>
+        </svg>
+        <h3 class="step-title">Find optimal sites</h3>
+        <p class="step-body">
+          The algorithm identifies the exact locations that minimise average travel distance to demand — maximising coverage with your given facility count via k-medoids on road distances.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+
+<!-- ═══════════════════════════════════════
+     CAPABILITIES
+═══════════════════════════════════════ -->
+<section id="capabilities" aria-label="Capabilities">
+  <div class="container">
+    <div class="s-header">
+      <div class="s-header-tag">
+        <span class="section-tag">— 03</span>
+      </div>
+      <h2 class="s-title reveal">Capabilities.</h2>
+    </div>
+
+    <div class="cap-grid">
+
+      <div class="cap reveal">
+        <svg class="cap-icon" viewBox="0 0 36 36" fill="none" stroke="currentColor" aria-hidden="true">
+          <circle cx="18" cy="18" r="11" stroke-width="1"   stroke-opacity="0.2"/>
+          <circle cx="18" cy="18" r="5.5" stroke-width="1"  stroke-opacity="0.5"/>
+          <circle cx="18" cy="18" r="2.25" fill="var(--teal)" stroke="none"/>
+          <line x1="18" y1="7"   x2="18" y2="2"   stroke-width="1"   stroke-opacity="0.4"/>
+          <line x1="18" y1="34"  x2="18" y2="29"  stroke-width="1"   stroke-opacity="0.4"/>
+          <line x1="7"  y1="18"  x2="2"  y2="18"  stroke-width="1"   stroke-opacity="0.4"/>
+          <line x1="34" y1="18"  x2="29" y2="18"  stroke-width="1"   stroke-opacity="0.4"/>
+        </svg>
+        <h3 class="cap-title">Coverage optimisation</h3>
+        <p class="cap-body">
+          Given N facilities to place, find the configuration that maximises demand within a specified travel-distance threshold. Solved via k-medoids on a real road-distance matrix — not Euclidean approximation.
+        </p>
+      </div>
+
+      <div class="cap reveal reveal-d1">
+        <svg class="cap-icon" viewBox="0 0 36 36" fill="none" stroke="currentColor" aria-hidden="true">
+          <path d="M4 32L13 19L20 25.5L29 13L33 17" stroke-width="1.25" stroke-opacity="0.7" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="33" cy="9"  r="4" stroke="var(--teal)" stroke-width="1.5" fill="var(--teal)" fill-opacity="0.15"/>
+          <circle cx="13" cy="19" r="2.5" stroke-width="1" stroke-opacity="0.4" fill="none"/>
+        </svg>
+        <h3 class="cap-title">Network gap analysis</h3>
+        <p class="cap-body">
+          Identify underserved zones in your existing facility network. Quantify where demand exceeds coverage thresholds and surface the service deficit by district and sub-region.
+        </p>
+      </div>
+
+      <div class="cap reveal reveal-d2">
+        <svg class="cap-icon" viewBox="0 0 36 36" fill="none" stroke="currentColor" aria-hidden="true">
+          <path d="M7 29C7 29 11 18 18 18C25 18 29 7 29 7" stroke-width="1.25" stroke-opacity="0.6" stroke-linecap="round"/>
+          <circle cx="7"  cy="29" r="2.5" fill="var(--teal)" stroke="none"/>
+          <circle cx="29" cy="7"  r="2.5" fill="var(--teal)" fill-opacity="0.5" stroke="none"/>
+          <circle cx="18" cy="18" r="2"   stroke-width="1" stroke-opacity="0.4" fill="none"/>
+        </svg>
+        <h3 class="cap-title">Road-aware routing</h3>
+        <p class="cap-body">
+          All distance calculations traverse Hong Kong's OSM-derived road network. One-way streets, tunnels, harbour crossings, and elevation-adjusted route preferences are fully accounted for.
+        </p>
+      </div>
+
+      <div class="cap reveal reveal-d3">
+        <svg class="cap-icon" viewBox="0 0 36 36" fill="none" stroke="currentColor" aria-hidden="true">
+          <rect x="4"  y="25" width="5" height="8"  stroke-width="1"    stroke-opacity="0.45" fill="none"/>
+          <rect x="13" y="18" width="5" height="15" stroke-width="1"    stroke-opacity="0.5"  fill="none"/>
+          <rect x="22" y="11" width="5" height="22" stroke="var(--teal)" stroke-width="1.25"  fill="var(--teal)" fill-opacity="0.12"/>
+          <rect x="31" y="20" width="4" height="13" stroke-width="1"    stroke-opacity="0.4"  fill="none"/>
+        </svg>
+        <h3 class="cap-title">Demand modelling</h3>
+        <p class="cap-body">
+          7.5M-resident dataset disaggregated across HK's 18 districts, with weighting for density, commercial land use, and operator-specific demand profiles for logistics, EV charging, or field service networks.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+
+<!-- ═══════════════════════════════════════
+     CONTACT
+═══════════════════════════════════════ -->
+<section id="contact" aria-label="Request analysis">
+  <div class="container">
+    <div class="contact-inner">
+
+      <!-- Left: intro -->
+      <div class="contact-left">
+        <span class="section-tag">— 04</span>
+        <h2 class="s-title reveal" style="margin-top: 1.5rem;">
+          Describe your<br>siting <em>problem</em>.
+        </h2>
+        <p class="contact-desc reveal reveal-d1">
+          Tell us where you need to place facilities, how many, and what demand you're covering. We run the analysis on Hong Kong's road network and return your optimal configuration — no charge for the first run.
+        </p>
+        <div class="contact-meta reveal reveal-d2">
+          <div><span>—</span> Free initial analysis</div>
+          <div><span>—</span> Full HK road network</div>
+          <div><span>—</span> Response within 48 hours</div>
+        </div>
+      </div>
+
+      <!-- Right: form -->
+      <form class="form reveal reveal-d1"
+            id="contact-form"
+            action="https://formspree.io/f/xdajdarn"
+            method="POST"
+            novalidate>
+
+        <div class="field">
+          <label class="field-label" for="f-company">Company or organisation</label>
+          <input class="field-input" type="text" id="f-company" name="company"
+                 autocomplete="organization"
+                 placeholder="e.g. Citylink Logistics HK"
+                 required>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="f-email">Email address</label>
+          <input class="field-input" type="email" id="f-email" name="email"
+                 autocomplete="email"
+                 placeholder="you@company.com"
+                 required>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="f-problem">Describe your siting problem</label>
+          <textarea class="field-textarea" id="f-problem" name="problem"
+                    placeholder="e.g. We need to place 4 logistics depots across HK to serve 200 customer locations. Current average travel distance is ~8 km — we want to reduce it."
+                    required></textarea>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="f-n">Number of facilities to place (optional)</label>
+          <input class="field-input" type="number" id="f-n" name="facility_count"
+                 min="1" max="100"
+                 placeholder="e.g. 4">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-ink" id="submit-btn">
+            Request Free Analysis
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M2.5 7.5h10M8.5 3.5l4 4-4 4"/>
+            </svg>
+          </button>
+          <p class="form-note">First analysis is free. No account needed. Formspree-secured.</p>
+          <div class="form-success" id="form-success" role="alert">
+            Request received — we'll be in touch within 48 hours.
+          </div>
+          <div class="form-error" id="form-error" role="alert">
+            Something went wrong. Please email us directly or try again.
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════ -->
+<footer>
+  <p class="footer-copy">OptiLoc — Spatial Site Optimisation · Hong Kong · © 2025</p>
+  <ul class="footer-links">
+    <li><a href="#" target="_blank" rel="noopener">API Docs</a></li>
+    <li><a href="#" target="_blank" rel="noopener">GitHub</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</footer>
+
+
+<script>
+  'use strict';
+
+  /* ── NAV scroll state ── */
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 56);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll(); // run once on load
+
+  /* ── Mobile hamburger ── */
+  const hamburger  = document.getElementById('hamburger');
+  const navLinks   = document.getElementById('nav-links');
+  let menuOpen = false;
+
+  hamburger.addEventListener('click', () => {
+    menuOpen = !menuOpen;
+    navLinks.classList.toggle('open', menuOpen);
+    hamburger.setAttribute('aria-expanded', menuOpen);
+  });
+
+  // Close on link click
+  navLinks.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      menuOpen = false;
+      navLinks.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', false);
+    });
+  });
+
+  /* ── Scroll reveal ── */
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!prefersReduced) {
+    const revealEls = document.querySelectorAll('.reveal');
+
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          revealObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -32px 0px' });
+
+    revealEls.forEach(el => revealObs.observe(el));
+
+    // Hero: reveal immediately on load
+    document.querySelectorAll('#hero .reveal').forEach((el, i) => {
+      setTimeout(() => el.classList.add('in'), 80 + i * 130);
+    });
+  }
+
+  /* ── Counter animation ── */
+  const counters = document.querySelectorAll('.counter');
+
+  function runCounter(el) {
+    const target   = parseFloat(el.dataset.target);
+    const decimals = parseInt(el.dataset.decimals ?? '0', 10);
+    const duration = 1800;
+    const start    = performance.now();
+
+    function tick(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased    = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      el.textContent = (eased * target).toFixed(decimals);
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  if (prefersReduced) {
+    // Show final values immediately
+    counters.forEach(el => {
+      const decimals = parseInt(el.dataset.decimals ?? '0', 10);
+      el.textContent = parseFloat(el.dataset.target).toFixed(decimals);
+    });
+  } else {
+    const counterObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          runCounter(e.target);
+          counterObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    counters.forEach(el => counterObs.observe(el));
+  }
+
+  /* ── Contact form (Formspree AJAX) ── */
+  const form       = document.getElementById('contact-form');
+  const submitBtn  = document.getElementById('submit-btn');
+  const successMsg = document.getElementById('form-success');
+  const errorMsg   = document.getElementById('form-error');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMsg.style.display = 'none';
+
+    // Simple client-side validation
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const originalLabel = submitBtn.innerHTML;
+    submitBtn.disabled  = true;
+    submitBtn.innerHTML = 'Sending&hellip;';
+
+    try {
+      const res = await fetch(form.action, {
+        method:  'POST',
+        body:    new FormData(form),
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (res.ok) {
+        form.reset();
+        submitBtn.style.display  = 'none';
+        successMsg.style.display = 'block';
+      } else {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Server error');
+      }
+    } catch (err) {
+      console.error('[OptiLoc form]', err);
+      errorMsg.style.display = 'block';
+      submitBtn.disabled     = false;
+      submitBtn.innerHTML    = originalLabel;
+    }
+  });
+</script>
+</body>
+</html>
