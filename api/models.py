@@ -171,3 +171,68 @@ class AnalyzeNetworkResponse(BaseModel):
     runtime_s: float
     n_demand_nodes: int
     total_weight: float
+
+
+# ---- /solve_mclp_road ---------------------------------------------------------
+
+class MCLPRoadRequest(BaseModel):
+    k: int = Field(
+        DEFAULT_K,
+        ge=MIN_K,
+        le=MAX_K,
+        description=f"Number of facilities to open ({MIN_K}-{MAX_K}).",
+    )
+    r: float = Field(
+        3000.0,
+        ge=500.0,
+        le=10_000.0,
+        description="Coverage radius in metres (500-10 000). Default 3 000 m.",
+    )
+    lambda_m: float | None = Field(
+        None,
+        ge=100.0,
+        le=50_000.0,
+        description=(
+            "Decay constant in metres for exponential coverage credit "
+            "exp(-d / lambda_m). None → binary mode (covered or not)."
+        ),
+    )
+    n_restarts: int = Field(
+        5,
+        ge=MIN_RESTARTS,
+        le=MAX_RESTARTS,
+        description=f"Multi-start count ({MIN_RESTARTS}-{MAX_RESTARTS}). Default 5.",
+    )
+
+
+class MCLPFacility(BaseModel):
+    node_id: int = Field(..., description="Road graph node ID.")
+    lon: float = Field(..., description="Facility longitude (WGS84).")
+    lat: float = Field(..., description="Facility latitude (WGS84).")
+
+
+class MCLPRoadResponse(BaseModel):
+    k: int
+    r: float = Field(..., description="Coverage radius used (metres).")
+    lambda_m: float | None = Field(
+        ..., description="Decay constant (metres); null in binary mode."
+    )
+    n_restarts: int
+    objective: float = Field(
+        ...,
+        description=(
+            "Best objective found. Binary mode: total covered demand weight. "
+            "Decay mode: sum(weight * exp(-dist / lambda_m))."
+        ),
+    )
+    coverage_pct: float = Field(
+        ...,
+        description=(
+            "Percentage of total weighted demand within r metres of the "
+            "nearest open facility (binary formula, both modes)."
+        ),
+    )
+    facilities: list[MCLPFacility]
+    runtime_s: float
+    n_demand_nodes: int
+    total_weight: float

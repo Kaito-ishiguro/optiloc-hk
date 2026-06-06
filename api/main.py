@@ -37,6 +37,7 @@ from api.config import (
     ROAD_WEBER_TIMEOUT_S,
     WEBER_TIMEOUT_S,
 )
+from api.mclp import solve_mclp_road
 from api.models import (
     AnalyzeNetworkRequest,
     AnalyzeNetworkResponse,
@@ -45,6 +46,8 @@ from api.models import (
     KMedianOZPResponse,
     KMedianRoadRequest,
     KMedianRoadResponse,
+    MCLPRoadRequest,
+    MCLPRoadResponse,
     WeberResponse,
     WeberRoadResponse,
 )
@@ -229,3 +232,30 @@ async def post_analyze_network(request: Request, body: AnalyzeNetworkRequest):
             detail=f"analyze_network exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
         )
     return AnalyzeNetworkResponse(**result)
+
+
+@app.post(
+    "/solve_mclp_road",
+    response_model=MCLPRoadResponse,
+    tags=["optimize"],
+    summary="Maximise demand coverage within a road-network radius (binary or decay mode).",
+)
+@limiter.limit(RATE_LIMIT_SOLVE)
+async def post_solve_mclp_road(request: Request, body: MCLPRoadRequest):
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                solve_mclp_road,
+                body.k,
+                body.r,
+                body.lambda_m,
+                body.n_restarts,
+            ),
+            timeout=ROAD_KMEDIAN_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"MCLP solver exceeded {ROAD_KMEDIAN_TIMEOUT_S}s timeout.",
+        )
+    return MCLPRoadResponse(**result)
