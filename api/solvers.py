@@ -1,4 +1,4 @@
-﻿"""Solver wrappers for the OptiLoc API.
+"""Solver wrappers for the OptiLoc API.
 
 Loads the numbered notebook scripts (files 08 and 16) as modules via
 importlib.util — the same pattern Session 013 used in file 18 to reuse
@@ -100,7 +100,16 @@ def initialize_solvers() -> None:
 # ---- /solve_weber wrapper -----------------------------------------------------
 
 def solve_weber() -> dict:
-    """Run Weiszfeld from the baked-in Victoria Harbour start on HK demand."""
+    """Solve the single-facility Weber problem using the Weiszfeld algorithm.
+    
+    This function uses Euclidean distances and starts from a baked-in 
+    Victoria Harbour location.
+    
+    Returns:
+        dict: A dictionary containing the optimal longitude, latitude, 
+        objective value (total weighted distance in degree-units), iterations, 
+        runtime, and demand point counts.
+    """
     assert _weber_mod is not None and _demand_points is not None
     x0 = np.array([WEISZFELD_START_LON, WEISZFELD_START_LAT])
 
@@ -123,8 +132,20 @@ def solve_weber() -> dict:
 # ---- /solve_kmedian_ozp wrapper -----------------------------------------------
 
 def solve_kmedian_ozp(k: int, n_restarts: int) -> dict:
-    """Run k-median with OZP commercial constraint over n_restarts random inits.
-    Reuses Session 012's lloyd_one_restart from file 16."""
+    """Solve the k-median problem with an OZP commercial-zone constraint.
+    
+    Uses Lloyd's algorithm with population-weighted centroid snapping, 
+    running over n_restarts random initializations to find the best optimum.
+    This function operates on Euclidean distances.
+    
+    Args:
+        k (int): Number of facilities to locate.
+        n_restarts (int): Number of random initializations.
+        
+    Returns:
+        dict: A dictionary with the best objective, worst objective, gap percentage,
+        the list of optimal facility coordinates, and summary metrics for all restarts.
+    """
     assert (
         _kmedian_mod is not None
         and _demand_points is not None
@@ -216,12 +237,17 @@ def _road_local_search(start: int) -> tuple[int, float, int]:
 # ---- /solve_weber_road wrapper ------------------------------------------------
 
 def solve_weber_road() -> dict:
-    """3-seed local search for the discrete road-network Weber optimum.
+    """Solve the single-facility Weber problem using road-network distances.
 
-    Seeds mirror notebook 22:
+    Uses a 3-seed local search for the discrete road-network optimum.
+    Seeds include:
       1. Nearest road node to the Euclidean Weber optimum.
       2. Highest-weight aggregated demand node.
       3. 10th-highest-weight node (adds starting diversity).
+      
+    Returns:
+        dict: The optimal road node ID, coordinates, total weighted road distance 
+        (metres), per-resident distance, and runtime statistics.
     """
     assert (
         _road_graph is not None
@@ -255,10 +281,20 @@ def solve_weber_road() -> dict:
 # ---- /solve_kmedian_road wrapper ---------------------------------------------
 
 def solve_kmedian_road(k: int, n_restarts: int) -> dict:
-    """Road-network k-median via Lloyd's algorithm with multi-start.
+    """Solve the k-median problem using road-network distances.
 
-    Assignment : Dijkstra from each facility to all demand nodes.
-    Location   : population-weighted centroid snapped to nearest road node.
+    Implements a multi-start Lloyd's algorithm where assignment is performed 
+    via Dijkstra shortest-paths, and the location step uses a population-weighted 
+    centroid snapped to the nearest road node.
+    
+    Args:
+        k (int): Number of facilities to locate.
+        n_restarts (int): Number of random initializations.
+        
+    Returns:
+        dict: The best objective (metres), per-resident distance, worst objective, 
+        and the final recommended facilities including their node IDs, coordinates, 
+        and population served.
     """
     assert (
         _road_graph is not None
