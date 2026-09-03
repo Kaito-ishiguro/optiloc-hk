@@ -4,7 +4,7 @@
 
 A facility location optimizer for Hong Kong, built from first principles. Reads real demographic data (WorldPop 2020, 41,288 weighted demand points), solves the classical **Weber problem** with hand-derived gradient and Hessian, and extends to **KKT-constrained optimization** with real geographic constraints (district boundaries, MTR proximity, competitor exclusion zones).
 
-**Status:** 🟢 Phase 1 shipped — single-facility unconstrained + KKT-constrained solvers complete. Phase 1c (multi-facility k-median) and live data integrations in progress.
+**Status:** 🟢 Phase 1 shipped — single-facility unconstrained + KKT-constrained solvers complete. Multi-facility k-median and advanced solvers (MCLP, rent-aware k-median, competitor coverage) also deployed. Live data integrations in progress.
 
 ---
 
@@ -74,6 +74,14 @@ The geographic finding: OSM's "Kowloon" polygon corresponds to the **historical*
 
 The MTR constraint comes out **inactive** despite the 624 exits — HK's transit network is so dense that almost any urban location is within 500m of an MTR exit naturally. In a less transit-rich Asian city (Bangkok, Manila, Jakarta) the same constraint would do real work. That's a Phase 3 product insight hiding inside a Phase 1 demonstration.
 
+### Advanced Solvers (MCLP, Rent-Aware, Competitor Coverage) ✅
+
+Extended the foundation to real-world operational constraints:
+- **True Graph 1-Median (Maranzana Refinement):** The production road-network solvers (`solve_kmedian_road`, `solve_kmedian_rent_road`) still use Lloyd's algorithm with centroid snapping for location updates, but they now apply a post-Lloyd Maranzana local search refinement. This escapes the centroid-snap local basin to find the true graph 1-median within each cluster, yielding a ~46% improvement in the optimal coverage benchmark (down to 8,539 m/resident).
+- **Maximal Coverage Location Problem (MCLP):** Implemented greedy interchange to maximize demand covered within a service radius, capturing binary coverage boundaries or continuous distance decay.
+- **Rent-Aware k-Median:** Trades off pure distance minimization against regional rental costs, finding sites where slight increases in transit distance yield significant real-estate savings.
+- **Competitor Coverage:** Classifies demand nodes against competitor networks to isolate at-risk zones, running a specialized 1-median on the lost demand to recommend optimal counter-locations.
+
 ### The data pipeline
 
 ```
@@ -114,7 +122,13 @@ Total data pipeline runs in under 30 seconds end-to-end. All input data is free 
 ```
 optiloc-hk/
 ├── README.md                ← you are here
-├── JOURNAL.md               ← dated build log of every session
+├── MATH.md                  ← formal mathematical definitions and algorithm proofs
+├── api/                     ← FastAPI endpoints for solvers
+│   ├── mclp.py                      # Maximal Coverage Location Problem solver
+│   ├── rent_aware.py                # Rent-aware k-median solver
+│   ├── competitor.py                # Competitor coverage endpoint
+│   └── main.py                      # API routing
+├── benchmarks/              ← Benchmark scripts and analysis
 ├── notebooks/
 │   ├── 01_ingest_worldpop.py        # raster → demand_points.csv
 │   ├── 02_render_demand_points.py   # demand heatmap visualization
@@ -123,6 +137,7 @@ optiloc-hk/
 │   ├── 04_visualize_convergence.py  # 8-trails convergence map
 │   ├── 05_solve_constrained.py      # KKT-constrained solver
 │   └── 06_visualize_constrained.py  # constrained-result visualization
+├── scripts/                 ← Data preparation and utility scripts
 ├── data/
 │   ├── raw/                 # WorldPop GeoTIFF (gitignored, re-downloadable)
 │   └── processed/           # CSVs from each pipeline stage
@@ -163,7 +178,6 @@ Maps land in `docs/maps/`. Open in a browser.
 
 What I'm building next, in priority order:
 
-- **Phase 1c — Multi-facility k-median.** Generalize from one facility to k facilities, alternating between Voronoi assignment and Weber sub-problems. Introduces non-convexity (the joint problem has local optima even though each sub-problem is convex). Closer to real logistics applications: where do you place k delivery hubs?
 - **Real-time data integration.** MTR ridership data (per station, per hour) as a richer demand signal than static population. Already exploring datasets through HKU coursework.
 - **Building-level constraints.** Snap candidate facility locations to actual building footprints from HK Lands Department CSDI data, instead of arbitrary coordinates. Resolves the "optimum landed in the middle of a road" issue.
 - **Multi-city expansion.** Same algorithms, different demographic rasters. Singapore, Tokyo, Bangkok, Manila — each city tests how generalizable the approach is.
@@ -201,8 +215,6 @@ Whether or not that company ever happens, the deeper goal stays the same: **keep
 - 🎓 HKU IELM, Class of 2028
 - 💼 Open to Summer 2026 internship roles in supply chain, operations research, AI/ML, and software engineering
 - 🔗 [LinkedIn] *www.linkedin.com/in/kaito-ishiguro-95a054327*
-
-📂 **Full build journal:** [`JOURNAL.md`](./JOURNAL.md) — every session, dated, with what I learned, what I got stuck on, and what I'm doing next.
 
 ---
 
