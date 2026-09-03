@@ -17,7 +17,7 @@ Instance: 12,513 aggregated demand nodes, total weight 7,496,988. Sweep: k in [1
 
 The true median is better at **every k and every seed** (no negative gaps in the best-of sweep). Mean improvement ranges from +4.15% to +11.06%.
 
-**Production default flipped (Session 046):** the centroid-snap location step in `solve_kmedian_road` and `solve_kmedian_rent_road` has been replaced with post-Lloyd Maranzana refinement. The published headline is now **~46% improvement / 8,539 m/resident** (k=2 true median vs baseline 15,809 m/resident). The old centroid figure (9,015 m/resident / 42.97%) is retained in the benchmark table above as a historical reference only.
+**Production default flipped (Session 046):** `solve_kmedian_road` and `solve_kmedian_rent_road` now run a Maranzana refinement pass after Lloyd converges. The centroid-snap location step is **not** removed -- it is still the location update inside the Lloyd loop (`api/solvers.py:384`, `api/rent_aware.py:206`); the refinement then hill-climbs out of the centroid-snap local basin to the true graph 1-median within each cluster (`api/solvers.py:387`, `api/rent_aware.py:209`). The published headline is now **~46% improvement / 8,539 m/resident** (k=2 true median vs baseline 15,809 m/resident). The old centroid figure (9,015 m/resident / 42.97%) is retained in the benchmark table above as a historical reference only.
 
 ## 2. Stability across seeds
 
