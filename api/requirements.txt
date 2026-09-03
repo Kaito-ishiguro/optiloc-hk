@@ -1,4 +1,4 @@
-﻿# OptiLoc API runtime deps — lean subset for Docker image.
+# OptiLoc API runtime deps — lean subset for Docker image.
 # Excludes folium / matplotlib / requests / rasterio.
 # Full dev env lives in repo-root requirements.txt.
 

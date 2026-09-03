@@ -1,4 +1,4 @@
-﻿"""Pydantic request/response schemas for the OptiLoc API.
+"""Pydantic request/response schemas for the OptiLoc API.
 
 All numeric inputs are bounded via Pydantic Field constraints to prevent DoS
 via pathological values (e.g. k=1_000_000).

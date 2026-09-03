@@ -1,4 +1,4 @@
-﻿"""Security limits, paths, and runtime constants for the OptiLoc API.
+"""Security limits, paths, and runtime constants for the OptiLoc API.
 
 These values bound resource usage on the public endpoints (per Session 014
 security review). Tune as customer-discovery surfaces real workload patterns.
