@@ -114,6 +114,7 @@ Total data pipeline runs in under 30 seconds end-to-end. All input data is free 
 - **Tabular data:** pandas
 - **Data sources:** WorldPop 2020 constrained UN-adjusted population raster (HDX), HK administrative boundaries and MTR data (OpenStreetMap)
 - **Version control:** Git, public GitHub repository with dated session-by-session commit history
+- **Deployment:** Containerized FastAPI backend via Docker, automatically built and deployed to Google Cloud Run using Cloud Build (`cloudbuild.yaml`).
 
 ---
 
@@ -127,8 +128,13 @@ optiloc-hk/
 │   ├── mclp.py                      # Maximal Coverage Location Problem solver
 │   ├── rent_aware.py                # Rent-aware k-median solver
 │   ├── competitor.py                # Competitor coverage endpoint
+│   ├── config.py                    # Environment and configuration
+│   ├── models.py                    # Data models
+│   ├── rent_data.py                 # Rent data definitions
+│   ├── travel_time.py               # Travel time constants
 │   └── main.py                      # API routing
 ├── benchmarks/              ← Benchmark scripts and analysis
+├── frontend/                ← React/TypeScript web interface
 ├── notebooks/
 │   ├── 01_ingest_worldpop.py        # raster → demand_points.csv
 │   ├── 02_render_demand_points.py   # demand heatmap visualization
@@ -138,10 +144,13 @@ optiloc-hk/
 │   ├── 05_solve_constrained.py      # KKT-constrained solver
 │   └── 06_visualize_constrained.py  # constrained-result visualization
 ├── scripts/                 ← Data preparation and utility scripts
+├── tests/                   ← Unit and invariant tests
 ├── data/
 │   ├── raw/                 # WorldPop GeoTIFF (gitignored, re-downloadable)
 │   └── processed/           # CSVs from each pipeline stage
 ├── docs/maps/               # generated HTML maps and screenshots
+├── cloudbuild.yaml          ← CI/CD pipeline definition for GCP
+├── Dockerfile               ← Container definition for API deployment
 └── requirements.txt
 ```
 
@@ -218,4 +227,4 @@ Whether or not that company ever happens, the deeper goal stays the same: **keep
 
 ---
 
-*Last updated: April 2026.*
+*Last updated: September 2026.*
