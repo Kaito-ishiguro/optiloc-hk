@@ -1,4 +1,4 @@
-﻿# OptiLoc HK API — Phase 1 portfolio image.
+# OptiLoc HK API — Phase 1 portfolio image.
 # Single-stage build. Relies on wheel-bundled native libs (no apt-get for GDAL/PROJ).
 # Targets Cloud Run (Linux/amd64). Local dev parity via Docker Desktop on Windows.
 
